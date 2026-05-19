@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Trust Railway reverse proxy
+// Trust reverse proxy (Hostinger / Railway)
 app.set('trust proxy', 1);
 
 // Security middleware
