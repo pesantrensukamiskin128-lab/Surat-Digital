@@ -139,13 +139,20 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Jalankan migrasi dulu, baru start server
-autoMigrate().then(() => {
+// Guard agar server hanya di-start sekali (bukan saat di-require sebagai module)
+if (require.main === module) {
+  autoMigrate().then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 SAFIRA Backend berjalan di port ${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    });
+  });
+} else {
+  // Di-require sebagai module (misal oleh Hostinger), start langsung tanpa migrate
   app.listen(PORT, () => {
     console.log(`🚀 SAFIRA Backend berjalan di port ${PORT}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   });
-});
+}
 
 module.exports = app;
