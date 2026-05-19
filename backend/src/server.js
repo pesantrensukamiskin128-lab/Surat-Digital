@@ -88,6 +88,31 @@ app.post('/api/setup/seed', async (req, res) => {
   }
 });
 
+// Endpoint debug koneksi database — hapus setelah masalah teratasi
+app.get('/api/setup/db-check', async (req, res) => {
+  const secret = req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  const prisma = require('./config/prisma');
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const userCount = await prisma.user.count();
+    res.json({
+      success: true,
+      message: 'Koneksi database OK',
+      userCount,
+      databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@') : 'TIDAK ADA'
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@') : 'TIDAK ADA'
+    });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
