@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -29,7 +29,6 @@ enum SuratMasukStatus {
   DIDISPOSISI
 }
 
-// Jenis surat
 enum JenisSurat {
   A
   B
@@ -43,137 +42,6 @@ enum JenisSurat {
   J
   K
   SK
-}
-
-model OrganisasiProfil {
-  id              String   @id @default(uuid())
-  tingkatanOrg    String   @default("Pimpinan Cabang")
-  namaOrg         String   @default("Fatayat Nahdlatul Ulama")
-  daerahOrg       String   @default("Kota Bandung")
-  alamat          String   @default("")
-  telepon         String   @default("")
-  email           String   @default("")
-  website         String   @default("")
-  logoPath        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password      String
-  namaLengkap   String
-  jabatan       String    @default("")
-  nomorHp       String    @default("")
-  role          Role      @default(PENGURUS)
-  isActive      Boolean   @default(true)
-  fotoProfil    String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  suratDibuat         SuratKeluar[]  @relation("SuratDibuat")
-  suratSekretaris     SuratKeluar[]  @relation("SuratSekretaris")
-  suratKetua          SuratKeluar[]  @relation("SuratKetua")
-  penerimaInternal    PenerimaInternal[]
-  disposisiDiterima   Disposisi[]    @relation("DisposisiPenerima")
-  disposisiDibuat     Disposisi[]    @relation("DisposisiDibuat")
-  suratMasukDiupload  SuratMasuk[]   @relation("SuratMasukUploader")
-  pushSubscriptions   PushSubscription[]
-  notifikasi          Notifikasi[]
-  agendaDibuat        Agenda[]
-  pesertaAgenda       PesertaAgenda[]
-  kehadiran           Kehadiran[]
-}
-
-model SuratKeluar {
-  id              String      @id @default(uuid())
-  nomorSurat      String?     @unique
-  jenisSurat      JenisSurat  @default(A)
-  perihal         String
-  lampiran        String?
-  isiSurat        String      @db.Text
-  lampiranIsi     String?     @db.Text
-  tujuanSurat     String?     @db.Text
-  tanggalMasehi   DateTime
-  tanggalHijriyah String
-  tempatTerbit    String      @default("Bandung")
-  status          SuratStatus @default(DRAFT)
-
-  sekretarisId    String?
-  ketuaId         String?
-  sekretaris      User?       @relation("SuratSekretaris", fields: [sekretarisId], references: [id])
-  ketua           User?       @relation("SuratKetua", fields: [ketuaId], references: [id])
-
-  ttdSekretaris    Boolean     @default(false)
-  ttdKetua         Boolean     @default(false)
-  tglTtdSekretaris DateTime?
-  tglTtdKetua      DateTime?
-
-  catatanTolak    String?     @db.Text
-  ditolakOleh     String?
-
-  qrCodePath      String?
-  qrCodeToken     String?     @unique
-
-  pembuatId       String
-  pembuat         User        @relation("SuratDibuat", fields: [pembuatId], references: [id])
-
-  penerimaEksternal String?
-  penerimaInternal  PenerimaInternal[]
-
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-}
-
-model PenerimaInternal {
-  id          String      @id @default(uuid())
-  suratId     String
-  userId      String
-  sudahDibaca Boolean     @default(false)
-  dibacaAt    DateTime?
-  surat       SuratKeluar @relation(fields: [suratId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id])
-  createdAt   DateTime    @default(now())
-}
-
-model SuratMasuk {
-  id              String           @id @default(uuid())
-  nomorSurat      String?
-  pengirim        String
-  perihal         String
-  isiSurat        String?          @db.Text
-  lampiran        String?          @db.Text
-  tanggalSurat    DateTime
-  tanggalTerima   DateTime         @default(now())
-  status          SuratMasukStatus @default(BARU)
-  filePath        String?
-  uploaderId      String
-  uploader        User             @relation("SuratMasukUploader", fields: [uploaderId], references: [id])
-  disposisi       Disposisi[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-}
-
-model Notifikasi {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  judul     String
-  pesan     String
-  url       String   @default("/")
-  dibaca    Boolean  @default(false)
-  createdAt DateTime @default(now())
 }
 
 enum KategoriAgenda {
@@ -195,8 +63,144 @@ enum ZonaWaktu {
   WIT
 }
 
+enum MetodeKehadiran {
+  APLIKASI
+  FORM
+}
+
+model OrganisasiProfil {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  tingkatanOrg    String   @default("Pimpinan Cabang")
+  namaOrg         String   @default("Fatayat Nahdlatul Ulama")
+  daerahOrg       String   @default("Kota Bandung")
+  alamat          String   @default("") @db.Text
+  telepon         String   @default("")
+  email           String   @default("")
+  website         String   @default("")
+  logoPath        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.VarChar(36)
+  email         String    @unique
+  password      String
+  namaLengkap   String
+  jabatan       String    @default("")
+  nomorHp       String    @default("")
+  role          Role      @default(PENGURUS)
+  isActive      Boolean   @default(true)
+  fotoProfil    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  suratDibuat         SuratKeluar[]      @relation("SuratDibuat")
+  suratSekretaris     SuratKeluar[]      @relation("SuratSekretaris")
+  suratKetua          SuratKeluar[]      @relation("SuratKetua")
+  penerimaInternal    PenerimaInternal[]
+  disposisiDiterima   Disposisi[]        @relation("DisposisiPenerima")
+  disposisiDibuat     Disposisi[]        @relation("DisposisiDibuat")
+  suratMasukDiupload  SuratMasuk[]       @relation("SuratMasukUploader")
+  pushSubscriptions   PushSubscription[]
+  notifikasi          Notifikasi[]
+  agendaDibuat        Agenda[]
+  pesertaAgenda       PesertaAgenda[]
+  kehadiran           Kehadiran[]
+}
+
+model SuratKeluar {
+  id              String      @id @default(uuid()) @db.VarChar(36)
+  nomorSurat      String?     @unique
+  jenisSurat      JenisSurat  @default(A)
+  perihal         String
+  lampiran        String?
+  isiSurat        String      @db.Text
+  lampiranIsi     String?     @db.Text
+  tujuanSurat     String?     @db.Text
+  tanggalMasehi   DateTime
+  tanggalHijriyah String
+  tempatTerbit    String      @default("Bandung")
+  status          SuratStatus @default(DRAFT)
+
+  sekretarisId    String?     @db.VarChar(36)
+  ketuaId         String?     @db.VarChar(36)
+  sekretaris      User?       @relation("SuratSekretaris", fields: [sekretarisId], references: [id])
+  ketua           User?       @relation("SuratKetua", fields: [ketuaId], references: [id])
+
+  ttdSekretaris    Boolean     @default(false)
+  ttdKetua         Boolean     @default(false)
+  tglTtdSekretaris DateTime?
+  tglTtdKetua      DateTime?
+
+  catatanTolak    String?     @db.Text
+  ditolakOleh     String?
+
+  qrCodePath      String?
+  qrCodeToken     String?     @unique
+
+  pembuatId       String      @db.VarChar(36)
+  pembuat         User        @relation("SuratDibuat", fields: [pembuatId], references: [id])
+
+  penerimaEksternal String?   @db.Text
+  penerimaInternal  PenerimaInternal[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model PenerimaInternal {
+  id          String      @id @default(uuid()) @db.VarChar(36)
+  suratId     String      @db.VarChar(36)
+  userId      String      @db.VarChar(36)
+  sudahDibaca Boolean     @default(false)
+  dibacaAt    DateTime?
+  surat       SuratKeluar @relation(fields: [suratId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id])
+  createdAt   DateTime    @default(now())
+}
+
+model SuratMasuk {
+  id              String           @id @default(uuid()) @db.VarChar(36)
+  nomorSurat      String?
+  pengirim        String
+  perihal         String
+  isiSurat        String?          @db.Text
+  lampiran        String?          @db.Text
+  tanggalSurat    DateTime
+  tanggalTerima   DateTime         @default(now())
+  status          SuratMasukStatus @default(BARU)
+  filePath        String?
+  uploaderId      String           @db.VarChar(36)
+  uploader        User             @relation("SuratMasukUploader", fields: [uploaderId], references: [id])
+  disposisi       Disposisi[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @db.VarChar(36)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique @db.VarChar(500)
+  p256dh    String   @db.VarChar(255)
+  auth      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+}
+
+model Notifikasi {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @db.VarChar(36)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  judul     String
+  pesan     String   @db.Text
+  url       String   @default("/")
+  dibaca    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
 model Agenda {
-  id              String         @id @default(uuid())
+  id              String         @id @default(uuid()) @db.VarChar(36)
   namaAgenda      String
   penyelenggara   String
   kategori        KategoriAgenda @default(RAPAT)
@@ -207,8 +211,8 @@ model Agenda {
   waktuSelesai    String
   zonaWaktu       ZonaWaktu      @default(WIB)
   deskripsi       String?        @db.Text
-  qrToken         String         @unique @default(uuid())
-  pembuatId       String
+  qrToken         String         @unique @default(uuid()) @db.VarChar(36)
+  pembuatId       String         @db.VarChar(36)
   pembuat         User           @relation(fields: [pembuatId], references: [id])
   peserta         PesertaAgenda[]
   kehadiran       Kehadiran[]
@@ -217,9 +221,9 @@ model Agenda {
 }
 
 model PesertaAgenda {
-  id        String  @id @default(uuid())
-  agendaId  String
-  userId    String
+  id        String  @id @default(uuid()) @db.VarChar(36)
+  agendaId  String  @db.VarChar(36)
+  userId    String  @db.VarChar(36)
   agenda    Agenda  @relation(fields: [agendaId], references: [id], onDelete: Cascade)
   user      User    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
@@ -227,19 +231,12 @@ model PesertaAgenda {
   @@unique([agendaId, userId])
 }
 
-enum MetodeKehadiran {
-  APLIKASI
-  FORM
-}
-
 model Kehadiran {
-  id          String          @id @default(uuid())
-  agendaId    String
+  id          String          @id @default(uuid()) @db.VarChar(36)
+  agendaId    String          @db.VarChar(36)
   agenda      Agenda          @relation(fields: [agendaId], references: [id], onDelete: Cascade)
-  // User aplikasi (opsional)
-  userId      String?
+  userId      String?         @db.VarChar(36)
   user        User?           @relation(fields: [userId], references: [id])
-  // Data manual (untuk non-user)
   namaLengkap String
   nomorHp     String?
   instansi    String?
@@ -250,12 +247,12 @@ model Kehadiran {
 }
 
 model Disposisi {
-  id              String     @id @default(uuid())
-  suratMasukId    String
+  id              String     @id @default(uuid()) @db.VarChar(36)
+  suratMasukId    String     @db.VarChar(36)
   suratMasuk      SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
-  dibuatOlehId    String
+  dibuatOlehId    String     @db.VarChar(36)
   dibuatOleh      User       @relation("DisposisiDibuat", fields: [dibuatOlehId], references: [id])
-  penerimaId      String
+  penerimaId      String     @db.VarChar(36)
   penerima        User       @relation("DisposisiPenerima", fields: [penerimaId], references: [id])
   instruksi       String     @db.Text
   catatan         String?    @db.Text
