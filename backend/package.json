@@ -1,7 +1,7 @@
 {
-  "name": "safira-backend",
+  "name": "safira",
   "version": "1.0.0",
-  "description": "SAFIRA Backend API",
+  "description": "SAFIRA - Sistem Administrasi Persuratan (Monolithic)",
   "main": "src/server.js",
   "engines": {
     "node": ">=18.0.0"
@@ -9,13 +9,14 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "build:frontend": "cd ../frontend && npm install && npm run build",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev --name init",
     "prisma:seed": "node prisma/seed.js",
     "prisma:studio": "prisma studio",
-    "setup": "npm install && npx prisma generate && npx prisma migrate deploy && node prisma/seed.js"
+    "setup": "npm install && npm run build:frontend && npx prisma generate && npx prisma migrate deploy && node prisma/seed.js"
   },
   "dependencies": {
     "@fontsource/amiri": "^5.2.8",

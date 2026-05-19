@@ -4,6 +4,9 @@ node_modules/
 # Environment variables
 .env
 
+# Frontend build output (di-generate saat deploy)
+# public/
+
 # Uploads (file yang diupload user, jangan ikut ke repo)
 uploads/*/
 

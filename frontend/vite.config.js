@@ -4,6 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   build: {
+    outDir: '../backend/public',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,

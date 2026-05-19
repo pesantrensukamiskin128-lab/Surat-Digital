@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
@@ -9,29 +8,35 @@ const { autoMigrate, runSeed } = require('./utils/autoMigrate');
 
 const app = express();
 
-// Trust reverse proxy (Hostinger / Railway)
+// Trust reverse proxy (Hostinger)
 app.set('trust proxy', 1);
 
 // Security middleware
+// Content-Security-Policy dilonggarkan agar frontend React bisa load assets
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  contentSecurityPolicy: false, // dihandle oleh Vite build
 }));
 
-// Rate limiting
+// Rate limiting hanya untuk API
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 menit
+  windowMs: 15 * 60 * 1000,
   max: 500,
   message: { success: false, message: 'Terlalu banyak permintaan, coba lagi nanti.' }
 });
 app.use('/api/', limiter);
 
-// CORS
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS tidak diperlukan lagi (monolitik, satu domain)
+// Tetap aktifkan untuk development lokal
+if (process.env.NODE_ENV === 'development') {
+  const cors = require('cors');
+  app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+}
 
 // Body parser
 app.use(express.json({ limit: '50mb' }));
@@ -42,15 +47,14 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Static files untuk uploads — support Railway volume mount
+// Static files untuk uploads
 const uploadsDir = process.env.UPLOAD_DIR
   ? (process.env.UPLOAD_DIR.startsWith('/') ? process.env.UPLOAD_DIR : path.join(__dirname, '../', process.env.UPLOAD_DIR))
   : path.join(__dirname, '../uploads');
-console.log('📁 UPLOAD_DIR env:', process.env.UPLOAD_DIR);
 console.log('📁 Serving uploads from:', uploadsDir);
 app.use('/uploads', express.static(uploadsDir));
 
-// Routes
+// API Routes
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/surat-keluar', require('./routes/suratKeluar.routes'));
@@ -65,15 +69,15 @@ app.use('/api/agenda', require('./routes/agenda.routes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'SAFIRA API berjalan dengan baik',
+  res.json({
+    success: true,
+    message: 'SAFIRA berjalan dengan baik',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
 });
 
-// Endpoint seed — hanya bisa dipanggil dengan SETUP_SECRET yang benar
+// Endpoint seed — dilindungi SETUP_SECRET
 app.post('/api/setup/seed', async (req, res) => {
   const secret = req.headers['x-setup-secret'];
   if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
@@ -88,7 +92,7 @@ app.post('/api/setup/seed', async (req, res) => {
   }
 });
 
-// Endpoint debug koneksi database — hapus setelah masalah teratasi
+// Endpoint debug koneksi database
 app.get('/api/setup/db-check', async (req, res) => {
   const secret = req.query.secret;
   if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
@@ -102,34 +106,40 @@ app.get('/api/setup/db-check', async (req, res) => {
       success: true,
       message: 'Koneksi database OK',
       userCount,
-      databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@') : 'TIDAK ADA'
+      databaseUrl: process.env.DATABASE_URL
+        ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@')
+        : 'TIDAK ADA'
     });
   } catch (err) {
     res.status(500).json({
       success: false,
       message: err.message,
-      databaseUrl: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@') : 'TIDAK ADA'
+      databaseUrl: process.env.DATABASE_URL
+        ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@')
+        : 'TIDAK ADA'
     });
   }
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
+// Serve frontend React (production)
+// Harus setelah semua route /api agar tidak tertimpa
+const publicDir = path.join(__dirname, '../public');
+app.use(express.static(publicDir));
+
+// Semua route non-API dikembalikan ke index.html (SPA fallback)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  
   if (err.name === 'ValidationError') {
     return res.status(400).json({ success: false, message: err.message });
   }
-  
   if (err.name === 'UnauthorizedError') {
     return res.status(401).json({ success: false, message: 'Token tidak valid' });
   }
-  
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Terjadi kesalahan internal server',
@@ -139,19 +149,17 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Guard agar server hanya di-start sekali (bukan saat di-require sebagai module)
 if (require.main === module) {
   autoMigrate().then(() => {
     app.listen(PORT, () => {
-      console.log(`🚀 SAFIRA Backend berjalan di port ${PORT}`);
+      console.log(`🚀 SAFIRA berjalan di port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+      console.log(`🌐 App URL: https://madina.masyppsukamiskin.sch.id`);
     });
   });
 } else {
-  // Di-require sebagai module (misal oleh Hostinger), start langsung tanpa migrate
   app.listen(PORT, () => {
-    console.log(`🚀 SAFIRA Backend berjalan di port ${PORT}`);
+    console.log(`🚀 SAFIRA berjalan di port ${PORT}`);
   });
 }
 
