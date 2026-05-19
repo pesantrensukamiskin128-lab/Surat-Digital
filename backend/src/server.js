@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const { autoMigrate, runSeed } = require('./utils/autoMigrate');
 
 const app = express();
 
@@ -72,6 +73,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Endpoint seed — hanya bisa dipanggil dengan SETUP_SECRET yang benar
+app.post('/api/setup/seed', async (req, res) => {
+  const secret = req.headers['x-setup-secret'];
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  try {
+    await runSeed();
+    res.json({ success: true, message: 'Seed database berhasil dijalankan' });
+  } catch (err) {
+    console.error('Seed error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
@@ -97,10 +113,14 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 SAFIRA Backend berjalan di port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+
+// Jalankan migrasi dulu, baru start server
+autoMigrate().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 SAFIRA Backend berjalan di port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  });
 });
 
 module.exports = app;
