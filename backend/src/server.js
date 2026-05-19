@@ -98,27 +98,38 @@ app.get('/api/setup/db-check', async (req, res) => {
   if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
     return res.status(403).json({ success: false, message: 'Akses ditolak' });
   }
-  const prisma = require('./config/prisma');
+
+  const dbUrl = process.env.DATABASE_URL || '';
+  const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ':***@');
+
+  // Test 1: Prisma
+  let prismaResult = null;
   try {
+    const prisma = require('./config/prisma');
     await prisma.$queryRaw`SELECT 1`;
     const userCount = await prisma.user.count();
-    res.json({
-      success: true,
-      message: 'Koneksi database OK',
-      userCount,
-      databaseUrl: process.env.DATABASE_URL
-        ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@')
-        : 'TIDAK ADA'
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-      databaseUrl: process.env.DATABASE_URL
-        ? process.env.DATABASE_URL.replace(/:([^:@]+)@/, ':***@')
-        : 'TIDAK ADA'
-    });
+    prismaResult = { ok: true, userCount };
+  } catch (e) {
+    prismaResult = { ok: false, error: e.message };
   }
+
+  // Test 2: mysql2 langsung (tanpa Prisma)
+  let mysqlResult = null;
+  try {
+    const mysql = require('mysql2/promise');
+    const conn = await mysql.createConnection(dbUrl);
+    await conn.query('SELECT 1');
+    await conn.end();
+    mysqlResult = { ok: true };
+  } catch (e) {
+    mysqlResult = { ok: false, error: e.message };
+  }
+
+  res.json({
+    databaseUrl: maskedUrl,
+    prisma: prismaResult,
+    mysql2: mysqlResult,
+  });
 });
 
 // Serve frontend React (production)
