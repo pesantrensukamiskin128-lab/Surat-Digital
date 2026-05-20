@@ -18,11 +18,11 @@ router.get('/:id/preview', previewPDF);
 // Admin only
 router.post('/', authorize('ADMIN'), createSurat);
 router.put('/:id', authorize('ADMIN'), updateSurat);
-router.delete('/:id', authorize('ADMIN', 'SEKRETARIS', 'KETUA'), deleteSurat);
+router.delete('/:id', authorize('ADMIN', 'TATA_USAHA', 'KEPALA'), deleteSurat);
 router.post('/:id/kirim', authorize('ADMIN'), kirimSurat);
 
-// Sekretaris & Ketua
-router.post('/:id/tanda-tangan', authorize('SEKRETARIS', 'KETUA'), tandaTangan);
-router.post('/:id/tolak', authorize('SEKRETARIS', 'KETUA'), tolakSurat);
+// Tata Usaha & Kepala
+router.post('/:id/tanda-tangan', authorize('TATA_USAHA', 'KEPALA'), tandaTangan);
+router.post('/:id/tolak', authorize('TATA_USAHA', 'KEPALA'), tolakSurat);
 
 module.exports = router;

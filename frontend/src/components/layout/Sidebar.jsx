@@ -11,16 +11,16 @@ import { useQuery } from '@tanstack/react-query'
 import { organisasiAPI, getUploadUrl } from '../../services/api'
 
 const navItems = [
-  { to: '/dashboard', icon: HomeIcon, label: 'Dashboard', roles: ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'] },
-  { to: '/surat-keluar', icon: DocumentTextIcon, label: 'Surat Keluar', roles: ['ADMIN', 'SEKRETARIS', 'KETUA'] },
-  { to: '/surat-masuk', icon: InboxIcon, label: 'Surat Masuk', roles: ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'] },
-  { to: '/disposisi', icon: ClipboardDocumentListIcon, label: 'Disposisi', roles: ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'] },
-  { to: '/agenda', icon: CalendarDaysIcon, label: 'Agenda Kegiatan', roles: ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'] },
-  { to: '/riwayat-presensi', icon: ClockIcon, label: 'Riwayat Presensi', roles: ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'] },
-  { to: '/scan-qr', icon: QrCodeIcon, label: 'Scan QR', roles: ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'] },
+  { to: '/dashboard', icon: HomeIcon, label: 'Dashboard', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
+  { to: '/surat-keluar', icon: DocumentTextIcon, label: 'Surat Keluar', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA'] },
+  { to: '/surat-masuk', icon: InboxIcon, label: 'Surat Masuk', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
+  { to: '/disposisi', icon: ClipboardDocumentListIcon, label: 'Disposisi', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
+  { to: '/agenda', icon: CalendarDaysIcon, label: 'Agenda Kegiatan', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
+  { to: '/riwayat-presensi', icon: ClockIcon, label: 'Riwayat Presensi', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
+  { to: '/scan-qr', icon: QrCodeIcon, label: 'Scan QR', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
   { to: '/rekap', icon: ChartBarIcon, label: 'Rekap Surat', roles: ['ADMIN'] },
   { to: '/manajemen-user', icon: UsersIcon, label: 'Manajemen User', roles: ['ADMIN'] },
-  { to: '/profil-organisasi', icon: BuildingOfficeIcon, label: 'Profil Organisasi', roles: ['ADMIN'] },
+  { to: '/profil-organisasi', icon: BuildingOfficeIcon, label: 'Profil Madrasah', roles: ['ADMIN'] },
 ]
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -55,9 +55,9 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
         <div className="min-w-0">
           <p className="font-bold text-primary-900 text-sm leading-tight truncate">
-            SAFIRA
+            SIRAMA
           </p>
-          <p className="text-xs text-gray-400 truncate">PC Fatayat NU Kota Bandung</p>
+          <p className="text-xs text-gray-400 truncate">Sistem Informasi Risalah & Administrasi</p>
         </div>
         {/* Close button mobile */}
         <button

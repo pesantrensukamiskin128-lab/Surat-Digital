@@ -50,8 +50,8 @@ const defaultForm = {
   tanggalMasehi: new Date().toISOString().split('T')[0],
   tanggalHijriyah: '',
   tempatTerbit: 'Bandung',
-  sekretarisId: '',
-  ketuaId: '',
+  tataUsahaId: '',
+  kepalaId: '',
   penerimaEksternal: '',
   penerimaInternalIds: [],
 }
@@ -72,13 +72,13 @@ export default function SuratKeluarFormPage() {
     enabled: isEdit,
   })
 
-  const { data: sekretarisList } = useQuery({
-    queryKey: ['users-sekretaris'],
-    queryFn: () => userAPI.getByRole('SEKRETARIS').then(r => r.data.data),
+  const { data: tataUsahaList } = useQuery({
+    queryKey: ['users-tata-usaha'],
+    queryFn: () => userAPI.getByRole('TATA_USAHA').then(r => r.data.data),
   })
-  const { data: ketuaList } = useQuery({
-    queryKey: ['users-ketua'],
-    queryFn: () => userAPI.getByRole('KETUA').then(r => r.data.data),
+  const { data: kepalaList } = useQuery({
+    queryKey: ['users-kepala'],
+    queryFn: () => userAPI.getByRole('KEPALA').then(r => r.data.data),
   })
   const { data: allUsers } = useQuery({
     queryKey: ['users-all'],
@@ -98,8 +98,8 @@ export default function SuratKeluarFormPage() {
         tanggalMasehi:       existingSurat.tanggalMasehi?.split('T')[0] || defaultForm.tanggalMasehi,
         tanggalHijriyah:     existingSurat.tanggalHijriyah      || '',
         tempatTerbit:        existingSurat.tempatTerbit         || 'Bandung',
-        sekretarisId:        existingSurat.sekretarisId         || '',
-        ketuaId:             existingSurat.ketuaId              || '',
+        tataUsahaId:         existingSurat.tataUsahaId          || '',
+        kepalaId:            existingSurat.kepalaId             || '',
         penerimaEksternal:   existingSurat.penerimaEksternal    || '',
         penerimaInternalIds: existingSurat.penerimaInternal?.map(p => p.userId) || [],
       })
@@ -127,7 +127,7 @@ export default function SuratKeluarFormPage() {
     if (!form.perihal.trim())                        { toast.error('Perihal harus diisi'); return }
     if (!form.isiSurat || form.isiSurat === '<p></p>') { toast.error('Isi surat harus diisi'); return }
     if (!form.tanggalMasehi)                         { toast.error('Tanggal harus diisi'); return }
-    if (!isDraft && !form.sekretarisId)              { toast.error('Pilih penandatangan sekretaris'); return }
+    if (!isDraft && !form.tataUsahaId)              { toast.error('Pilih Tata Usaha terlebih dahulu'); return }
     saveMutation.mutate({ ...form, isDraft })
   }
 
@@ -271,29 +271,28 @@ export default function SuratKeluarFormPage() {
           <div className="card card-body space-y-4">
             <h2 className="section-title">Penandatangan</h2>
             <div>
-              <label className="label">Sekretaris</label>
-              <select className="input-field" value={form.sekretarisId}
-                onChange={e => setForm(p => ({ ...p, sekretarisId: e.target.value }))}>
-                <option value="">— Pilih Sekretaris —</option>
-                {sekretarisList?.map(u => (
+              <label className="label">Tata Usaha (Pemberi Paraf)</label>
+              <select className="input-field" value={form.tataUsahaId}
+                onChange={e => setForm(p => ({ ...p, tataUsahaId: e.target.value }))}>
+                <option value="">— Pilih Tata Usaha —</option>
+                {tataUsahaList?.map(u => (
                   <option key={u.id} value={u.id}>{u.namaLengkap}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Ketua</label>
-              <select className="input-field" value={form.ketuaId}
-                onChange={e => setForm(p => ({ ...p, ketuaId: e.target.value }))}>
-                <option value="">— Pilih Ketua —</option>
-                {ketuaList?.map(u => (
+              <label className="label">Kepala (Penandatangan)</label>
+              <select className="input-field" value={form.kepalaId}
+                onChange={e => setForm(p => ({ ...p, kepalaId: e.target.value }))}>
+                <option value="">— Pilih Kepala —</option>
+                {kepalaList?.map(u => (
                   <option key={u.id} value={u.id}>{u.namaLengkap}</option>
                 ))}
               </select>
             </div>
             <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
-              <p className="font-medium text-gray-700 mb-1">Alur tanda tangan:</p>
-              <p>1. Sekretaris → 2. Ketua</p>
-              <p className="mt-1">Jika hanya Sekretaris dipilih, surat langsung selesai setelah TTD Sekretaris.</p>
+              <p className="font-medium text-gray-700 mb-1">Alur penandatanganan:</p>
+              <p>1. Tata Usaha memberi paraf → 2. Kepala menandatangani</p>
             </div>
           </div>
 
@@ -366,7 +365,7 @@ export default function SuratKeluarFormPage() {
             <button onClick={() => handleSubmit(false)} disabled={saveMutation.isPending}
               className="btn-primary w-full justify-center">
               <DocumentCheckIcon className="w-4 h-4" />
-              {saveMutation.isPending ? 'Mengirim...' : 'Kirim ke Sekretaris'}
+              {saveMutation.isPending ? 'Mengirim...' : 'Kirim ke Tata Usaha'}
             </button>
           </div>
         </div>

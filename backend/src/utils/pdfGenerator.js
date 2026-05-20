@@ -797,6 +797,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
 }
 
 // ── IDENTITAS SURAT ───────────────────────────────────────────────────────────
+// Untuk layout rutin (A/B): hanya Nomor, Lampiran, Perihal — tanggal dipindah ke bawah isi surat
 function drawIdentitasSurat(doc, surat, startY) {
   let y = startY + 4;
   const labelX = ML;
@@ -804,41 +805,21 @@ function drawIdentitasSurat(doc, surat, startY) {
   const valueX = colonX + 8;
   const valueW = CW - (valueX - ML);
 
-  // Tanggal Hijriyah + Masehi rata kanan
-  const hijriyah = (surat.tanggalHijriyah || '').replace(/H\.?\s*$/, '').trim();
-  const tglHijr  = hijriyah + ' H.';
-  const tglMasehi = surat.tanggalMasehi
-    ? new Date(surat.tanggalMasehi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' M.'
-    : '';
-  const tempatTerbit = surat.tempatTerbit || 'Bandung';
-
-  // Baris 1 tanggal: Tempat, Hijriyah
-  doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
-     .text(`${tempatTerbit}, ${tglHijr}`, ML, y, { width: CW, align: 'right' });
-  const y2 = doc.y;
-  // Baris 2 tanggal: Masehi
-  if (tglMasehi) {
-    doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
-       .text(tglMasehi, ML, y2, { width: CW, align: 'right' });
-  }
-
-  // Identitas kiri
   const rows = [
     { label: 'Nomor',    value: surat.nomorSurat || '-' },
     { label: 'Lampiran', value: surat.lampiran   || '-' },
     { label: 'Perihal',  value: surat.perihal    || '-' },
   ];
 
-  let yLeft = y;
   for (const row of rows) {
     doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000');
-    doc.text(row.label, labelX, yLeft, { width: 100, lineBreak: false });
-    doc.text(':', colonX, yLeft, { width: 8, lineBreak: false });
-    doc.text(row.value, valueX, yLeft, { width: valueW });
-    yLeft = doc.y + 1;
+    doc.text(row.label, labelX, y, { width: 100, lineBreak: false });
+    doc.text(':', colonX, y, { width: 8, lineBreak: false });
+    doc.text(row.value, valueX, y, { width: valueW });
+    y = doc.y + 1;
   }
 
-  return Math.max(yLeft, tglMasehi ? doc.y : y2) + 8;
+  return y + 8;
 }
 
 // ── TUJUAN SURAT ──────────────────────────────────────────────────────────────
@@ -973,49 +954,41 @@ async function renderBodyBlocks(doc, blocks, startY, kopHeight, organisasi, foot
 }
 
 // ── TANDA TANGAN ──────────────────────────────────────────────────────────────
+// Layout baru: hanya Kepala yang tanda tangan, posisi rata kiri di sisi kanan halaman
 async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
-  const colW  = CW / 2;
-  const qrSz  = 45;
-  const gapTtd = FS_ISI * 3.5; // ruang tanda tangan
+  const blokW  = 200;                    // lebar blok TTD
+  const blokX  = ML + CW - blokW;       // posisi X (rata kanan)
+  const qrSz   = 45;
+  const gapTtd = FS_ISI * 4;            // ruang tanda tangan
 
-  // Ketua di KIRI, Sekretaris di KANAN
-  const leftPerson  = surat.ketua;
-  const rightPerson = surat.sekretaris;
+  const kepala = surat.kepala;
 
   let y = startY + 8;
 
-  // QR di atas nama penandatangan (kiri & kanan)
+  // Jabatan Kepala
+  const jabatanKepala = kepala?.jabatan || 'Kepala Madrasah';
+  doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
+     .text(jabatanKepala + ',', blokX, y, { width: blokW, align: 'left' });
+  y = doc.y + 4;
+
+  // QR code
   if (qrDataUrl) {
-    const qrXLeft  = ML + (colW - qrSz) / 2;
-    const qrXRight = ML + colW + (colW - qrSz) / 2;
     try {
-      if (leftPerson)  doc.image(qrDataUrl, qrXLeft,  y, { width: qrSz, height: qrSz });
-      if (rightPerson) doc.image(qrDataUrl, qrXRight, y, { width: qrSz, height: qrSz });
+      doc.image(qrDataUrl, blokX, y, { width: qrSz, height: qrSz });
     } catch (_) {}
     y += qrSz + 4;
   } else {
     y += gapTtd;
   }
 
-  // Nama + jabatan kiri (Ketua)
-  if (leftPerson) {
+  // Nama Kepala (bold, underline)
+  if (kepala) {
     doc.font(F_BOLD).fontSize(FS_ISI).fillColor('#000000')
-       .text(leftPerson.namaLengkap || '', ML, y, { width: colW, align: 'center', underline: true });
-    const yAfterNama = doc.y + 1;
-    doc.font(F_REG).fontSize(FS_ISI - 1).fillColor('#333333')
-       .text(leftPerson.jabatan || '', ML, yAfterNama, { width: colW, align: 'center' });
+       .text(kepala.namaLengkap || '', blokX, y, { width: blokW, align: 'left', underline: true });
+    y = doc.y + 2;
   }
 
-  // Nama + jabatan kanan (Sekretaris)
-  if (rightPerson) {
-    doc.font(F_BOLD).fontSize(FS_ISI).fillColor('#000000')
-       .text(rightPerson.namaLengkap || '', ML + colW, y, { width: colW, align: 'center', underline: true });
-    const yAfterNama = doc.y + 1;
-    doc.font(F_REG).fontSize(FS_ISI - 1).fillColor('#333333')
-       .text(rightPerson.jabatan || '', ML + colW, yAfterNama, { width: colW, align: 'center' });
-  }
-
-  return doc.y + 6;
+  return y + 6;
 }
 
 // ── FOOTER HALAMAN BIASA (hanya nomor halaman) ───────────────────────────────
@@ -1030,8 +1003,8 @@ async function drawFooter(doc, surat, qrDataUrl, pageNum, totalPages) {
   const qrSz    = 55;
   const footerY = PH - 75;
   const verifikasiTxt =
-    'Dokumen ini ditandatangani secara elektronik melalui Aplikasi Administrasi Persuratan ' +
-    (surat.organisasiNama || 'PC Fatayat NU Kota Bandung') +
+    'Dokumen ini ditandatangani secara elektronik melalui Aplikasi SIRAMA - Sistem Informasi Risalah & Administrasi Madrasah ' +
+    (surat.organisasiNama || '') +
     ', untuk verifikasi surat scan QRCode.';
 
   // QR kiri bawah
@@ -1392,6 +1365,7 @@ async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RES
     doc.addPage();
     y = await drawKopSurat(doc, organisasi, MT);
   }
+  y = drawTitimangsa(doc, surat, y);
   y = await drawTandaTangan(doc, surat, y, qrDataUrl);
 
   const range = doc.bufferedPageRange();
@@ -1443,7 +1417,7 @@ async function generateSuratPDF(surat, organisasi) {
 
   surat.organisasiNama = organisasi.namaOrg
     ? `${organisasi.tingkatanOrg || ''} ${organisasi.namaOrg} ${organisasi.daerahOrg || ''}`.trim()
-    : 'PC Fatayat NU Kota Bandung';
+    : '';
 
   const FOOTER_RESERVE = 90;
 

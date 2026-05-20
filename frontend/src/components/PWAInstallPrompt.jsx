@@ -31,10 +31,10 @@ export function PWAInstallPrompt() {
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white border border-green-200 rounded-xl shadow-lg p-4 z-50 flex items-start gap-3">
       <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-        <img src="/logo-org.png" alt="SAFIRA" className="w-full h-full object-cover" />
+        <img src="/logo-org.png" alt="SIRAMA" className="w-full h-full object-cover" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800">Install SAFIRA</p>
+        <p className="text-sm font-semibold text-gray-800">Install SIRAMA</p>
         <p className="text-xs text-gray-500 mt-0.5">Pasang aplikasi untuk akses lebih cepat</p>
         <div className="flex gap-2 mt-2">
           <button
@@ -73,7 +73,7 @@ export function PWAUpdatePrompt() {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-gray-800">Update Tersedia</p>
-        <p className="text-xs text-gray-500 mt-0.5">Versi baru SAFIRA siap digunakan</p>
+        <p className="text-xs text-gray-500 mt-0.5">Versi baru SIRAMA siap digunakan</p>
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => updateServiceWorker(true)}

@@ -27,7 +27,7 @@ const useAuthStore = create(
       getToken: () => get().token,
     }),
     {
-      name: 'safira-auth',
+      name: 'sirama-auth',
       partialize: (state) => ({
         user: state.user,
         token: state.token,

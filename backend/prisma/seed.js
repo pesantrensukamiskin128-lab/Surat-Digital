@@ -11,13 +11,13 @@ async function main() {
   if (!existingProfil) {
     await prisma.organisasiProfil.create({
       data: {
-        tingkatanOrg: 'Pimpinan Cabang',
-        namaOrg:      'Fatayat Nahdlatul Ulama',
-        daerahOrg:    'Kota Bandung',
-        alamat:  'Jl. Sancang No. 8 Kel. Burangrang, Kec. Lengkong, Kota Bandung 40262',
-        telepon: '+6285295361348',
-        email:   'info@fatayatnukotabandung.or.id',
-        website: 'www.fatayatnukotabandung.or.id',
+        tingkatanOrg: 'Madrasah Ibtidaiyah',
+        namaOrg:      'Madrasah',
+        daerahOrg:    '',
+        alamat:       '',
+        telepon:      '',
+        email:        '',
+        website:      '',
       },
     });
     console.log('✅ Profil organisasi default dibuat');
@@ -25,48 +25,48 @@ async function main() {
 
   // Buat admin default
   const existingAdmin = await prisma.user.findUnique({
-    where: { email: 'admin@safira.com' },
+    where: { email: 'admin@sirama.com' },
   });
 
   if (!existingAdmin) {
     const hashedPassword = await bcrypt.hash('admin123', 12);
     await prisma.user.create({
       data: {
-        email: 'admin@safira.com',
+        email: 'admin@sirama.com',
         password: hashedPassword,
         namaLengkap: 'Administrator',
         jabatan: 'Administrator Sistem',
         role: 'ADMIN',
       },
     });
-    console.log('✅ Admin default dibuat: admin@safira.com / admin123');
+    console.log('✅ Admin default dibuat: admin@sirama.com / admin123');
   }
 
   // Buat user contoh
   const users = [
     {
-      email: 'sekretaris@safira.com',
+      email: 'tatausaha@sirama.com',
       namaLengkap: 'Siti Aminah',
-      jabatan: 'Sekretaris Umum',
-      role: 'SEKRETARIS',
+      jabatan: 'Kepala Tata Usaha',
+      role: 'TATA_USAHA',
     },
     {
-      email: 'ketua@safira.com',
-      namaLengkap: 'Hj. Fatimah Zahra',
-      jabatan: 'Ketua Umum',
-      role: 'KETUA',
+      email: 'kepala@sirama.com',
+      namaLengkap: 'Bapak Kepala',
+      jabatan: 'Kepala Madrasah',
+      role: 'KEPALA',
     },
     {
-      email: 'pengurus1@safira.com',
+      email: 'guru1@sirama.com',
       namaLengkap: 'Nur Hidayah',
-      jabatan: 'Bendahara',
-      role: 'PENGURUS',
+      jabatan: 'Guru Kelas 1',
+      role: 'GURU',
     },
     {
-      email: 'pengurus2@safira.com',
+      email: 'guru2@sirama.com',
       namaLengkap: 'Aisyah Putri',
-      jabatan: 'Koordinator Bidang Pendidikan',
-      role: 'PENGURUS',
+      jabatan: 'Guru Kelas 2',
+      role: 'GURU',
     },
   ];
 
@@ -77,10 +77,7 @@ async function main() {
     if (!existing) {
       const hashedPassword = await bcrypt.hash('password123', 12);
       await prisma.user.create({
-        data: {
-          ...userData,
-          password: hashedPassword,
-        },
+        data: { ...userData, password: hashedPassword },
       });
       console.log(`✅ User dibuat: ${userData.email} / password123`);
     }

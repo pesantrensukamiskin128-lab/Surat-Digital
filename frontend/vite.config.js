@@ -23,9 +23,9 @@ export default defineConfig({
       filename: 'sw-custom.js',
       includeAssets: ['favicon.svg', 'logo-org.png'],
       manifest: {
-        name: 'SAFIRA - Sistem Administrasi Persuratan',
-        short_name: 'SAFIRA',
-        description: 'Sistem Administrasi Fatayat untuk Informasi Risalah dan Arsip',
+        name: 'SIRAMA - Sistem Informasi Risalah & Administrasi Madrasah',
+        short_name: 'SIRAMA',
+        description: 'Sistem Informasi Risalah & Administrasi Madrasah',
         theme_color: '#166534',
         background_color: '#166534',
         display: 'standalone',

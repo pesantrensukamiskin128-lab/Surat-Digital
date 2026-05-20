@@ -9,8 +9,8 @@ const verifySurat = async (req, res) => {
       where: { qrCodeToken: token },
       include: {
         pembuat: { select: { namaLengkap: true, jabatan: true } },
-        sekretaris: { select: { namaLengkap: true, jabatan: true } },
-        ketua: { select: { namaLengkap: true, jabatan: true } },
+        tataUsaha: { select: { namaLengkap: true, jabatan: true } },
+        kepala: { select: { namaLengkap: true, jabatan: true } },
         penerimaInternal: {
           include: {
             user: { select: { namaLengkap: true, jabatan: true } }
@@ -47,15 +47,15 @@ const verifySurat = async (req, res) => {
         tanggalMasehi: surat.tanggalMasehi,
         tanggalHijriyah: surat.tanggalHijriyah,
         penandatangan: {
-          sekretaris: surat.sekretaris ? {
-            nama: surat.sekretaris.namaLengkap,
-            jabatan: surat.sekretaris.jabatan,
-            tanggalTtd: surat.tglTtdSekretaris,
+          tataUsaha: surat.tataUsaha ? {
+            nama: surat.tataUsaha.namaLengkap,
+            jabatan: surat.tataUsaha.jabatan,
+            tanggalParaf: surat.tglParafTataUsaha,
           } : null,
-          ketua: surat.ketua ? {
-            nama: surat.ketua.namaLengkap,
-            jabatan: surat.ketua.jabatan,
-            tanggalTtd: surat.tglTtdKetua,
+          kepala: surat.kepala ? {
+            nama: surat.kepala.namaLengkap,
+            jabatan: surat.kepala.jabatan,
+            tanggalTtd: surat.tglTtdKepala,
           } : null,
         },
         organisasi: {
@@ -66,7 +66,7 @@ const verifySurat = async (req, res) => {
           logoPath: organisasi?.logoPath || null,
         },
         dibuatOleh: surat.pembuat.namaLengkap,
-        tanggalSelesai: surat.tglTtdKetua || surat.tglTtdSekretaris,
+        tanggalSelesai: surat.tglTtdKepala || surat.tglParafTataUsaha,
       }
     });
   } catch (error) {

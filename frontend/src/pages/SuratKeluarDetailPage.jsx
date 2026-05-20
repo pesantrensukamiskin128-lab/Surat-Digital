@@ -91,8 +91,8 @@ export default function SuratKeluarDetailPage() {
   if (!surat) return <div className="text-center py-20 text-gray-400">Surat tidak ditemukan</div>
 
   const canSign = (
-    (user?.role === 'SEKRETARIS' && surat.status === 'MENUNGGU_SEKRETARIS' && surat.sekretarisId === user.id) ||
-    (user?.role === 'KETUA' && surat.status === 'MENUNGGU_KETUA' && surat.ketuaId === user.id)
+    (user?.role === 'TATA_USAHA' && surat.status === 'MENUNGGU_TATA_USAHA' && surat.tataUsahaId === user.id) ||
+    (user?.role === 'KEPALA' && surat.status === 'MENUNGGU_KEPALA' && surat.kepalaId === user.id)
   )
 
   const canReject = canSign
@@ -124,7 +124,7 @@ export default function SuratKeluarDetailPage() {
               <EyeIcon className="w-4 h-4" /> Preview PDF
             </button>
           )}
-          {user?.role === 'ADMIN' && ['DRAFT', 'DITOLAK_SEKRETARIS', 'DITOLAK_KETUA'].includes(surat.status) && (
+          {user?.role === 'ADMIN' && ['DRAFT', 'DITOLAK_TATA_USAHA', 'DITOLAK_KEPALA'].includes(surat.status) && (
             <Link to={`/surat-keluar/edit/${id}`} className="btn-secondary">
               <PencilIcon className="w-4 h-4" /> Edit
             </Link>
@@ -206,46 +206,46 @@ export default function SuratKeluarDetailPage() {
           <div className="card card-body">
             <h2 className="section-title mb-4">Alur Penandatanganan</h2>
             <div className="space-y-4">
-              {/* Sekretaris */}
+              {/* Tata Usaha */}
               <div className="flex gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  surat.ttdSekretaris ? 'bg-green-100' : 'bg-gray-100'
+                  surat.parafTataUsaha ? 'bg-green-100' : 'bg-gray-100'
                 }`}>
-                  {surat.ttdSekretaris
+                  {surat.parafTataUsaha
                     ? <CheckCircleIcon className="w-5 h-5 text-green-600" />
                     : <span className="text-gray-400 text-xs font-bold">1</span>
                   }
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-800">
-                    {surat.sekretaris?.namaLengkap || 'Sekretaris belum dipilih'}
+                    {surat.tataUsaha?.namaLengkap || 'Tata Usaha belum dipilih'}
                   </p>
-                  <p className="text-xs text-gray-400">{surat.sekretaris?.jabatan || 'Sekretaris'}</p>
-                  {surat.tglTtdSekretaris && (
-                    <p className="text-xs text-green-600 mt-0.5">✓ {formatDateTime(surat.tglTtdSekretaris)}</p>
+                  <p className="text-xs text-gray-400">{surat.tataUsaha?.jabatan || 'Tata Usaha (Paraf)'}</p>
+                  {surat.tglParafTataUsaha && (
+                    <p className="text-xs text-green-600 mt-0.5">✓ Paraf: {formatDateTime(surat.tglParafTataUsaha)}</p>
                   )}
                 </div>
               </div>
 
               <div className="w-px h-4 bg-gray-200 ml-4" />
 
-              {/* Ketua */}
+              {/* Kepala */}
               <div className="flex gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  surat.ttdKetua ? 'bg-green-100' : 'bg-gray-100'
+                  surat.ttdKepala ? 'bg-green-100' : 'bg-gray-100'
                 }`}>
-                  {surat.ttdKetua
+                  {surat.ttdKepala
                     ? <CheckCircleIcon className="w-5 h-5 text-green-600" />
                     : <span className="text-gray-400 text-xs font-bold">2</span>
                   }
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-800">
-                    {surat.ketua?.namaLengkap || 'Ketua belum dipilih'}
+                    {surat.kepala?.namaLengkap || 'Kepala belum dipilih'}
                   </p>
-                  <p className="text-xs text-gray-400">{surat.ketua?.jabatan || 'Ketua'}</p>
-                  {surat.tglTtdKetua && (
-                    <p className="text-xs text-green-600 mt-0.5">✓ {formatDateTime(surat.tglTtdKetua)}</p>
+                  <p className="text-xs text-gray-400">{surat.kepala?.jabatan || 'Kepala (Tanda Tangan)'}</p>
+                  {surat.tglTtdKepala && (
+                    <p className="text-xs text-green-600 mt-0.5">✓ TTD: {formatDateTime(surat.tglTtdKepala)}</p>
                   )}
                 </div>
               </div>
@@ -282,14 +282,18 @@ export default function SuratKeluarDetailPage() {
               >
                 <EyeIcon className="w-4 h-4" /> Preview PDF Surat
               </button>
-              <button
-                onClick={() => ttdMutation.mutate()}
-                disabled={ttdMutation.isPending}
-                className="btn-primary w-full justify-center"
-              >
-                <CheckCircleIcon className="w-4 h-4" />
-                {ttdMutation.isPending ? 'Memproses...' : 'Tandatangani Surat'}
-              </button>
+              {canSign && (
+                <button
+                  onClick={() => ttdMutation.mutate()}
+                  disabled={ttdMutation.isPending}
+                  className="btn-primary w-full justify-center"
+                >
+                  <CheckCircleIcon className="w-4 h-4" />
+                  {ttdMutation.isPending ? 'Memproses...' : (
+                    user?.role === 'TATA_USAHA' ? 'Beri Paraf' : 'Tandatangani Surat'
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => setTolakModal(true)}
                 className="btn-danger w-full justify-center"
@@ -302,9 +306,9 @@ export default function SuratKeluarDetailPage() {
       </div>
 
       {/* Modal Kirim */}
-      <Modal isOpen={kirimModal} onClose={() => setKirimModal(false)} title="Kirim Surat ke Sekretaris" size="sm">
+      <Modal isOpen={kirimModal} onClose={() => setKirimModal(false)} title="Kirim Surat ke Tata Usaha" size="sm">
         <p className="text-sm text-gray-600 mb-5">
-          Surat akan dikirim ke sekretaris untuk ditandatangani. Pastikan semua informasi sudah benar.
+          Surat akan dikirim ke Tata Usaha untuk diparaf. Pastikan semua informasi sudah benar.
         </p>
         <div className="flex gap-3">
           <button onClick={() => setKirimModal(false)} className="btn-secondary flex-1">Batal</button>

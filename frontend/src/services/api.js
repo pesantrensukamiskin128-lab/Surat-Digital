@@ -94,7 +94,7 @@ export const suratMasukAPI = {
   }),
   delete: (id) => api.delete(`/surat-masuk/${id}`),
   getFileUrl: (id) => {
-    const token = (() => { try { return JSON.parse(localStorage.getItem('safira-auth') || '{}')?.state?.token } catch { return null } })()
+    const token = (() => { try { return JSON.parse(localStorage.getItem('sirama-auth') || '{}')?.state?.token } catch { return null } })()
     const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '')
     return `${base}/api/surat-masuk/${id}/file${token ? `?token=${token}` : ''}`
   },

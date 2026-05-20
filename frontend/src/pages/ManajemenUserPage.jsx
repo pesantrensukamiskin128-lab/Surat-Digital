@@ -12,8 +12,8 @@ import { PageLoader } from '../components/ui/LoadingSpinner'
 import Modal from '../components/ui/Modal'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
-const ROLES = ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS']
-const defaultForm = { email: '', password: '', namaLengkap: '', jabatan: '', nomorHp: '', role: 'PENGURUS' }
+const ROLES = ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU']
+const defaultForm = { email: '', password: '', namaLengkap: '', jabatan: '', nomorHp: '', role: 'GURU' }
 
 export default function ManajemenUserPage() {
   const queryClient = useQueryClient()

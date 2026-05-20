@@ -10,8 +10,8 @@ const fs = require('fs');
 
 const suratInclude = {
   pembuat:   { select: { id: true, namaLengkap: true, jabatan: true, role: true } },
-  sekretaris:{ select: { id: true, namaLengkap: true, jabatan: true } },
-  ketua:     { select: { id: true, namaLengkap: true, jabatan: true } },
+  tataUsaha: { select: { id: true, namaLengkap: true, jabatan: true } },
+  kepala:    { select: { id: true, namaLengkap: true, jabatan: true } },
   penerimaInternal: {
     include: { user: { select: { id: true, namaLengkap: true, jabatan: true, role: true } } }
   },
@@ -24,11 +24,11 @@ const getAllSurat = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     let where = {};
 
-    if (req.user.role === 'SEKRETARIS') {
-      where.sekretarisId = req.user.id;
-    } else if (req.user.role === 'KETUA') {
-      where.ketuaId = req.user.id;
-    } else if (req.user.role === 'PENGURUS') {
+    if (req.user.role === 'TATA_USAHA') {
+      where.tataUsahaId = req.user.id;
+    } else if (req.user.role === 'KEPALA') {
+      where.kepalaId = req.user.id;
+    } else if (req.user.role === 'GURU') {
       where.penerimaInternal = { some: { userId: req.user.id } };
       where.status = 'SELESAI';
     }
@@ -36,8 +36,8 @@ const getAllSurat = async (req, res) => {
     if (status) where.status = status;
     if (search) {
       where.OR = [
-        { perihal:    { contains: search, mode: 'insensitive' } },
-        { nomorSurat: { contains: search, mode: 'insensitive' } },
+        { perihal:    { contains: search } },
+        { nomorSurat: { contains: search } },
       ];
     }
 
@@ -59,7 +59,7 @@ const getSuratById = async (req, res) => {
     const surat = await prisma.suratKeluar.findUnique({ where: { id: req.params.id }, include: suratInclude });
     if (!surat) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
 
-    if (req.user.role === 'PENGURUS') {
+    if (req.user.role === 'GURU') {
       const ok = surat.penerimaInternal.some(p => p.userId === req.user.id);
       if (!ok || surat.status !== 'SELESAI')
         return res.status(403).json({ success: false, message: 'Akses ditolak' });
@@ -80,7 +80,7 @@ const createSurat = async (req, res) => {
     const {
       jenisSurat = 'A', perihal, lampiran, isiSurat, lampiranIsi,
       tujuanSurat, tanggalMasehi, tempatTerbit,
-      sekretarisId, ketuaId,
+      tataUsahaId, kepalaId,
       penerimaEksternal, penerimaInternalIds,
       isDraft = true,
     } = req.body;
@@ -102,9 +102,9 @@ const createSurat = async (req, res) => {
         tanggalMasehi:  tanggal,
         tanggalHijriyah: hijriyah.formatted,
         tempatTerbit:   tempatTerbit || 'Bandung',
-        status:         isDraft ? 'DRAFT' : 'MENUNGGU_SEKRETARIS',
-        sekretarisId:   sekretarisId || null,
-        ketuaId:        ketuaId      || null,
+        status:         isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+        tataUsahaId:    tataUsahaId || null,
+        kepalaId:       kepalaId    || null,
         pembuatId:      req.user.id,
         penerimaEksternal: penerimaEksternal || null,
         penerimaInternal: penerimaInternalIds?.length
@@ -114,7 +114,7 @@ const createSurat = async (req, res) => {
       include: suratInclude,
     });
 
-    res.status(201).json({ success: true, message: isDraft ? 'Draft disimpan' : 'Surat dikirim ke sekretaris', data: surat });
+    res.status(201).json({ success: true, message: isDraft ? 'Draft disimpan' : 'Surat dikirim ke Tata Usaha', data: surat });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan saat membuat surat' });
@@ -128,13 +128,13 @@ const updateSurat = async (req, res) => {
     const existing = await prisma.suratKeluar.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
 
-    if (!['DRAFT','DITOLAK_SEKRETARIS','DITOLAK_KETUA'].includes(existing.status))
+    if (!['DRAFT','DITOLAK_TATA_USAHA','DITOLAK_KEPALA'].includes(existing.status))
       return res.status(400).json({ success: false, message: 'Surat tidak dapat diedit pada status ini' });
 
     const {
       jenisSurat, perihal, lampiran, isiSurat, lampiranIsi,
       tujuanSurat, tanggalMasehi, tempatTerbit,
-      sekretarisId, ketuaId,
+      tataUsahaId, kepalaId,
       penerimaEksternal, penerimaInternalIds,
       isDraft = true,
     } = req.body;
@@ -156,15 +156,15 @@ const updateSurat = async (req, res) => {
         tanggalMasehi:   tanggal,
         tanggalHijriyah: hijriyah.formatted,
         tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
-        status:          isDraft ? 'DRAFT' : 'MENUNGGU_SEKRETARIS',
-        sekretarisId:    sekretarisId    !== undefined ? sekretarisId    : existing.sekretarisId,
-        ketuaId:         ketuaId         !== undefined ? ketuaId         : existing.ketuaId,
+        status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+        tataUsahaId:     tataUsahaId     !== undefined ? tataUsahaId     : existing.tataUsahaId,
+        kepalaId:        kepalaId        !== undefined ? kepalaId        : existing.kepalaId,
         penerimaEksternal: penerimaEksternal !== undefined ? penerimaEksternal : existing.penerimaEksternal,
         catatanTolak:    isDraft ? existing.catatanTolak : null,
-        ttdSekretaris:   false,
-        ttdKetua:        false,
-        tglTtdSekretaris: null,
-        tglTtdKetua:     null,
+        parafTataUsaha:  false,
+        ttdKepala:       false,
+        tglParafTataUsaha: null,
+        tglTtdKepala:    null,
         penerimaInternal: penerimaInternalIds?.length
           ? { create: penerimaInternalIds.map(uid => ({ userId: uid })) }
           : undefined,
@@ -172,7 +172,7 @@ const updateSurat = async (req, res) => {
       include: suratInclude,
     });
 
-    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke sekretaris', data: updated });
+    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Tata Usaha', data: updated });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
@@ -186,12 +186,10 @@ const deleteSurat = async (req, res) => {
     const existing = await prisma.suratKeluar.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
 
-    // Admin bisa hapus semua status, Sekretaris/Ketua hanya DRAFT
     if (req.user.role !== 'ADMIN' && existing.status !== 'DRAFT') {
       return res.status(400).json({ success: false, message: 'Hanya Admin yang dapat menghapus surat selain DRAFT' });
     }
 
-    // Hapus file QR code jika ada
     if (existing.qrCodePath) {
       const qrFile = path.join(__dirname, '../../', existing.qrCodePath);
       if (fs.existsSync(qrFile)) fs.unlinkSync(qrFile);
@@ -211,33 +209,32 @@ const kirimSurat = async (req, res) => {
     const { id } = req.params;
     const surat = await prisma.suratKeluar.findUnique({ where: { id } });
     if (!surat) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
-    if (!['DRAFT','DITOLAK_SEKRETARIS','DITOLAK_KETUA'].includes(surat.status))
+    if (!['DRAFT','DITOLAK_TATA_USAHA','DITOLAK_KEPALA'].includes(surat.status))
       return res.status(400).json({ success: false, message: 'Surat tidak dapat dikirim pada status ini' });
-    if (!surat.sekretarisId)
-      return res.status(400).json({ success: false, message: 'Pilih penandatangan sekretaris terlebih dahulu' });
+    if (!surat.tataUsahaId)
+      return res.status(400).json({ success: false, message: 'Pilih Tata Usaha terlebih dahulu' });
 
     const updated = await prisma.suratKeluar.update({
       where: { id },
-      data: { status: 'MENUNGGU_SEKRETARIS', catatanTolak: null, ttdSekretaris: false, ttdKetua: false, tglTtdSekretaris: null, tglTtdKetua: null },
+      data: { status: 'MENUNGGU_TATA_USAHA', catatanTolak: null, parafTataUsaha: false, ttdKepala: false, tglParafTataUsaha: null, tglTtdKepala: null },
       include: suratInclude,
     });
 
-    // Notifikasi ke sekretaris
-    if (updated.sekretarisId) {
-      await createNotifikasi(updated.sekretarisId, {
-        judul: '✍️ Surat Menunggu Tanda Tangan',
-        pesan: `Surat "${updated.perihal}" perlu ditandatangani`,
+    if (updated.tataUsahaId) {
+      await createNotifikasi(updated.tataUsahaId, {
+        judul: '✍️ Surat Menunggu Paraf',
+        pesan: `Surat "${updated.perihal}" perlu diparaf`,
         url: `/surat-keluar/${updated.id}`,
       });
     }
 
-    res.json({ success: true, message: 'Surat dikirim ke sekretaris', data: updated });
+    res.json({ success: true, message: 'Surat dikirim ke Tata Usaha', data: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
   }
 };
 
-// ── TANDA TANGAN ─────────────────────────────────────────────────────────────
+// ── TANDA TANGAN / PARAF ─────────────────────────────────────────────────────
 const tandaTangan = async (req, res) => {
   try {
     const { id } = req.params;
@@ -246,16 +243,19 @@ const tandaTangan = async (req, res) => {
 
     let updateData = {};
 
-    if (req.user.role === 'SEKRETARIS') {
-      if (surat.status !== 'MENUNGGU_SEKRETARIS' || surat.sekretarisId !== req.user.id)
-        return res.status(403).json({ success: false, message: 'Tidak dapat menandatangani surat ini' });
+    if (req.user.role === 'TATA_USAHA') {
+      // Tata Usaha memberikan paraf
+      if (surat.status !== 'MENUNGGU_TATA_USAHA' || surat.tataUsahaId !== req.user.id)
+        return res.status(403).json({ success: false, message: 'Tidak dapat memaraf surat ini' });
+
       updateData = {
-        ttdSekretaris: true,
-        tglTtdSekretaris: new Date(),
-        status: surat.ketuaId ? 'MENUNGGU_KETUA' : 'SELESAI',
+        parafTataUsaha: true,
+        tglParafTataUsaha: new Date(),
+        status: surat.kepalaId ? 'MENUNGGU_KEPALA' : 'SELESAI',
       };
-      // Jika langsung selesai (tanpa ketua), generate nomor & QR
-      if (!surat.ketuaId) {
+
+      // Jika langsung selesai (tanpa kepala), generate nomor & QR
+      if (!surat.kepalaId) {
         const nomorSurat = await generateNomorSurat(surat.jenisSurat);
         const qrToken    = uuidv4();
         const qrPath     = await generateQRCode(qrToken, id);
@@ -263,15 +263,17 @@ const tandaTangan = async (req, res) => {
         updateData.qrCodeToken = qrToken;
         updateData.qrCodePath  = qrPath;
       }
-    } else if (req.user.role === 'KETUA') {
-      if (surat.status !== 'MENUNGGU_KETUA' || surat.ketuaId !== req.user.id)
+    } else if (req.user.role === 'KEPALA') {
+      // Kepala menandatangani
+      if (surat.status !== 'MENUNGGU_KEPALA' || surat.kepalaId !== req.user.id)
         return res.status(403).json({ success: false, message: 'Tidak dapat menandatangani surat ini' });
+
       const nomorSurat = await generateNomorSurat(surat.jenisSurat);
       const qrToken    = uuidv4();
       const qrPath     = await generateQRCode(qrToken, id);
       updateData = {
-        ttdKetua: true,
-        tglTtdKetua: new Date(),
+        ttdKepala: true,
+        tglTtdKepala: new Date(),
         status: 'SELESAI',
         nomorSurat,
         qrCodeToken: qrToken,
@@ -283,16 +285,16 @@ const tandaTangan = async (req, res) => {
 
     const updated = await prisma.suratKeluar.update({ where: { id }, data: updateData, include: suratInclude });
 
-    // Notifikasi: sekretaris TTD → kirim ke ketua
-    if (req.user.role === 'SEKRETARIS' && updateData.status === 'MENUNGGU_KETUA' && updated.ketuaId) {
-      await createNotifikasi(updated.ketuaId, {
+    // Notifikasi: Tata Usaha paraf → kirim ke Kepala
+    if (req.user.role === 'TATA_USAHA' && updateData.status === 'MENUNGGU_KEPALA' && updated.kepalaId) {
+      await createNotifikasi(updated.kepalaId, {
         judul: '✍️ Surat Menunggu Tanda Tangan',
         pesan: `Surat "${updated.perihal}" perlu ditandatangani`,
         url: `/surat-keluar/${updated.id}`,
       });
     }
 
-    // Notifikasi: surat SELESAI → kirim ke semua penerima internal (pengurus)
+    // Notifikasi: surat SELESAI → kirim ke semua penerima internal
     if (updateData.status === 'SELESAI' && updated.penerimaInternal?.length > 0) {
       const penerimaIds = updated.penerimaInternal.map(p => p.userId);
       await createNotifikasi(penerimaIds, {
@@ -302,7 +304,7 @@ const tandaTangan = async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: 'Surat berhasil ditandatangani', data: updated });
+    res.json({ success: true, message: req.user.role === 'TATA_USAHA' ? 'Surat berhasil diparaf' : 'Surat berhasil ditandatangani', data: updated });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
@@ -320,14 +322,14 @@ const tolakSurat = async (req, res) => {
     if (!surat) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
 
     let newStatus;
-    if (req.user.role === 'SEKRETARIS') {
-      if (surat.status !== 'MENUNGGU_SEKRETARIS' || surat.sekretarisId !== req.user.id)
+    if (req.user.role === 'TATA_USAHA') {
+      if (surat.status !== 'MENUNGGU_TATA_USAHA' || surat.tataUsahaId !== req.user.id)
         return res.status(403).json({ success: false, message: 'Tidak dapat menolak surat ini' });
-      newStatus = 'DITOLAK_SEKRETARIS';
-    } else if (req.user.role === 'KETUA') {
-      if (surat.status !== 'MENUNGGU_KETUA' || surat.ketuaId !== req.user.id)
+      newStatus = 'DITOLAK_TATA_USAHA';
+    } else if (req.user.role === 'KEPALA') {
+      if (surat.status !== 'MENUNGGU_KEPALA' || surat.kepalaId !== req.user.id)
         return res.status(403).json({ success: false, message: 'Tidak dapat menolak surat ini' });
-      newStatus = 'DITOLAK_KETUA';
+      newStatus = 'DITOLAK_KEPALA';
     } else {
       return res.status(403).json({ success: false, message: 'Tidak memiliki izin' });
     }
@@ -372,13 +374,10 @@ const previewPDF = async (req, res) => {
     const surat = await prisma.suratKeluar.findUnique({ where: { id }, include: suratInclude });
     if (!surat) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
 
-    // Cek akses: ADMIN bisa preview semua, SEKRETARIS/KETUA hanya yang ditujukan ke mereka
-    if (req.user.role === 'SEKRETARIS' && surat.sekretarisId !== req.user.id) {
+    if (req.user.role === 'TATA_USAHA' && surat.tataUsahaId !== req.user.id)
       return res.status(403).json({ success: false, message: 'Akses ditolak' });
-    }
-    if (req.user.role === 'KETUA' && surat.ketuaId !== req.user.id) {
+    if (req.user.role === 'KEPALA' && surat.kepalaId !== req.user.id)
       return res.status(403).json({ success: false, message: 'Akses ditolak' });
-    }
 
     const organisasi = await prisma.organisasiProfil.findFirst();
     const { filepath } = await generateSuratPDF(surat, organisasi || {});
@@ -388,11 +387,8 @@ const previewPDF = async (req, res) => {
 
     const stream = fs.createReadStream(filepath);
     stream.pipe(res);
-    stream.on('end', () => {
-      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-    });
+    stream.on('end', () => { if (fs.existsSync(filepath)) fs.unlinkSync(filepath); });
     stream.on('error', (err) => {
-      console.error(err);
       if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
       if (!res.headersSent) res.status(500).json({ success: false, message: 'Gagal membaca PDF' });
     });
@@ -408,9 +404,9 @@ const getStatistik = async (req, res) => {
     const [total, draft, menunggu, selesai, ditolak] = await Promise.all([
       prisma.suratKeluar.count(),
       prisma.suratKeluar.count({ where: { status: 'DRAFT' } }),
-      prisma.suratKeluar.count({ where: { status: { in: ['MENUNGGU_SEKRETARIS','MENUNGGU_KETUA'] } } }),
+      prisma.suratKeluar.count({ where: { status: { in: ['MENUNGGU_TATA_USAHA','MENUNGGU_KEPALA'] } } }),
       prisma.suratKeluar.count({ where: { status: 'SELESAI' } }),
-      prisma.suratKeluar.count({ where: { status: { in: ['DITOLAK_SEKRETARIS','DITOLAK_KETUA'] } } }),
+      prisma.suratKeluar.count({ where: { status: { in: ['DITOLAK_TATA_USAHA','DITOLAK_KEPALA'] } } }),
     ]);
     res.json({ success: true, data: { total, draft, menunggu, selesai, ditolak } });
   } catch (err) {

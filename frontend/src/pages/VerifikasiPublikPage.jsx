@@ -47,7 +47,7 @@ export default function VerifikasiPublikPage() {
             </p>
             <div className="mt-6 p-4 bg-red-50 rounded-xl">
               <p className="text-xs text-red-600">
-                ⚠️ Dokumen ini tidak dapat diverifikasi keasliannya melalui sistem SAFIRA.
+                ⚠️ Dokumen ini tidak dapat diverifikasi keasliannya melalui sistem SIRAMA.
               </p>
             </div>
           </div>
@@ -117,26 +117,26 @@ export default function VerifikasiPublikPage() {
               {/* Penandatangan */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Penandatangan</h3>
-                {data.data.penandatangan?.sekretaris && (
-                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                    <CheckBadgeIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                {data.data.penandatangan?.tataUsaha && (
+                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                    <CheckBadgeIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{data.data.penandatangan.sekretaris.nama}</p>
-                      <p className="text-xs text-gray-500">{data.data.penandatangan.sekretaris.jabatan}</p>
-                      <p className="text-xs text-green-600 mt-0.5">
-                        ✓ Ditandatangani: {formatDateTime(data.data.penandatangan.sekretaris.tanggalTtd)}
+                      <p className="text-sm font-semibold text-gray-800">{data.data.penandatangan.tataUsaha.nama}</p>
+                      <p className="text-xs text-gray-500">{data.data.penandatangan.tataUsaha.jabatan}</p>
+                      <p className="text-xs text-blue-600 mt-0.5">
+                        ✓ Paraf: {formatDateTime(data.data.penandatangan.tataUsaha.tanggalParaf)}
                       </p>
                     </div>
                   </div>
                 )}
-                {data.data.penandatangan?.ketua && (
+                {data.data.penandatangan?.kepala && (
                   <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
                     <CheckBadgeIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{data.data.penandatangan.ketua.nama}</p>
-                      <p className="text-xs text-gray-500">{data.data.penandatangan.ketua.jabatan}</p>
+                      <p className="text-sm font-semibold text-gray-800">{data.data.penandatangan.kepala.nama}</p>
+                      <p className="text-xs text-gray-500">{data.data.penandatangan.kepala.jabatan}</p>
                       <p className="text-xs text-green-600 mt-0.5">
-                        ✓ Ditandatangani: {formatDateTime(data.data.penandatangan.ketua.tanggalTtd)}
+                        ✓ Ditandatangani: {formatDateTime(data.data.penandatangan.kepala.tanggalTtd)}
                       </p>
                     </div>
                   </div>
@@ -147,7 +147,7 @@ export default function VerifikasiPublikPage() {
               <div className="border-t border-gray-100 pt-4">
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <ShieldCheckIcon className="w-4 h-4 text-primary-500" />
-                  <p>Diverifikasi oleh Sistem Administrasi Persuratan SAFIRA</p>
+                  <p>Diverifikasi oleh Sistem Informasi Risalah & Administrasi Madrasah (SIRAMA)</p>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
                   Waktu verifikasi: {formatDateTime(new Date())}
@@ -158,7 +158,7 @@ export default function VerifikasiPublikPage() {
         )}
 
         <p className="text-center text-primary-200 text-xs mt-4">
-          SAFIRA — Smart Fatayat untuk Informasi Risalah dan Administrasi
+          SIRAMA — Sistem Informasi Risalah & Administrasi Madrasah
         </p>
       </motion.div>
     </div>

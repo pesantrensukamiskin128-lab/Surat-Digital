@@ -17,8 +17,8 @@ export function useDynamicFavicon() {
     if (!orgData) return
 
     // Update title
-    const namaOrg = orgData.namaOrg || 'SAFIRA'
-    document.title = `${namaOrg} - Sistem Administrasi Persuratan`
+    const namaOrg = orgData.namaOrg || 'SIRAMA'
+    document.title = `${namaOrg} - Sistem Informasi Risalah & Administrasi Madrasah`
 
     // Update favicon jika ada logo
     if (orgData.logoPath) {

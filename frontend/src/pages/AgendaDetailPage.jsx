@@ -190,7 +190,7 @@ export default function AgendaDetailPage() {
 
     // ── Panduan presensi (3 langkah) ──
     const steps = [
-      { num: '1', label: 'Buka Aplikasi SAFIRA' },
+      { num: '1', label: 'Buka Aplikasi SIRAMA' },
       { num: '2', label: 'Scan Kode QR' },
       { num: '3', label: 'Verifikasi Agenda' },
     ]
@@ -491,7 +491,7 @@ export default function AgendaDetailPage() {
 
             <div className="mt-4 space-y-2.5">
               {[
-                'Buka Aplikasi SAFIRA',
+                'Buka Aplikasi SIRAMA',
                 'Ketuk menu Scan QR dan arahkan pada Kode QR',
                 'Konfirmasi, dan kehadiran Anda akan tercatat',
               ].map((step, i) => (
