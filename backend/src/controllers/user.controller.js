@@ -49,7 +49,7 @@ const createUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email, password, nama lengkap, dan role diperlukan' });
     }
 
-    const validRoles = ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'];
+    const validRoles = ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ success: false, message: 'Role tidak valid' });
     }
@@ -98,7 +98,7 @@ const updateUser = async (req, res) => {
     if (jabatan !== undefined) updateData.jabatan = jabatan.trim();
     if (nomorHp !== undefined) updateData.nomorHp = nomorHp.trim();
     if (role !== undefined) {
-      const validRoles = ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'];
+      const validRoles = ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'];
       if (!validRoles.includes(role)) {
         return res.status(400).json({ success: false, message: 'Role tidak valid' });
       }
@@ -187,8 +187,8 @@ const downloadTemplate = async (req, res) => {
       ['namaLengkap', 'email', 'password', 'jabatan', 'nomorHp', 'role'],
     ];
     const contoh = [
-      ['Siti Aminah', 'siti@contoh.com', 'password123', 'Ketua Bidang', '08123456789', 'PENGURUS'],
-      ['Nur Halimah', 'nur@contoh.com', 'password123', 'Sekretaris', '08987654321', 'SEKRETARIS'],
+      ['Siti Aminah', 'siti@contoh.com', 'password123', 'Kepala Tata Usaha', '08123456789', 'TATA_USAHA'],
+      ['Budi Santoso', 'budi@contoh.com', 'password123', 'Guru Kelas', '08987654321', 'GURU'],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet([...headers, ...contoh]);
@@ -211,7 +211,7 @@ const downloadTemplate = async (req, res) => {
       ['password', 'Password awal (min. 6 karakter)', 'Ya', 'password123'],
       ['jabatan', 'Jabatan dalam organisasi', 'Tidak', 'Ketua Bidang'],
       ['nomorHp', 'Nomor handphone', 'Tidak', '08123456789'],
-      ['role', 'Role: ADMIN / SEKRETARIS / KETUA / PENGURUS', 'Ya', 'PENGURUS'],
+      ['role', 'Role: ADMIN / TATA_USAHA / KEPALA / GURU', 'Ya', 'GURU'],
     ];
     const wsPetunjuk = XLSX.utils.aoa_to_sheet(petunjukData);
     wsPetunjuk['!cols'] = [{ wch: 18 }, { wch: 45 }, { wch: 10 }, { wch: 25 }];
@@ -236,7 +236,7 @@ const exportUsers = async (req, res) => {
       orderBy: { namaLengkap: 'asc' },
     });
 
-    const ROLE_LABEL = { ADMIN: 'Admin', SEKRETARIS: 'Sekretaris', KETUA: 'Ketua', PENGURUS: 'Pengurus' };
+    const ROLE_LABEL = { ADMIN: 'Admin', TATA_USAHA: 'Tata Usaha', KEPALA: 'Kepala', GURU: 'Guru' };
 
     const rows = users.map((u, i) => ({
       No: i + 1,
@@ -282,7 +282,7 @@ const importUsers = async (req, res) => {
       return res.status(400).json({ success: false, message: 'File Excel kosong atau format tidak sesuai' });
     }
 
-    const validRoles = ['ADMIN', 'SEKRETARIS', 'KETUA', 'PENGURUS'];
+    const validRoles = ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'];
     const results = { berhasil: 0, gagal: 0, errors: [] };
 
     for (let i = 0; i < rows.length; i++) {

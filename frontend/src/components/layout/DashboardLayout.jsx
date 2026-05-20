@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -22,13 +23,20 @@ export default function DashboardLayout() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {/* Sidebar — fixed width, tidak ikut flex-shrink */}
+      <div className="hidden lg:block w-64 flex-shrink-0 h-full">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* Mobile sidebar */}
+      <div className="lg:hidden">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
+
+      {/* Main content — flex-1 agar mengisi sisa lebar */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        
+
         <main className="flex-1 overflow-y-auto">
           <motion.div
             key={location.pathname}

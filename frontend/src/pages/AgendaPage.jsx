@@ -170,7 +170,7 @@ export default function AgendaPage() {
           placeholder="Cari nama agenda atau penyelenggara..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="input pl-9 w-full"
+          className="input-field pl-9 w-full"
         />
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -291,10 +291,11 @@ export default function AgendaPage() {
 
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
               <div className="p-6 space-y-5">
+
                 {/* Nama Agenda */}
                 <FormField label="Nama Agenda" required>
                   <input
-                    className="input"
+                    className="input-field"
                     placeholder="Contoh: Rapat Koordinasi Bulanan"
                     value={form.namaAgenda}
                     onChange={e => setForm(f => ({ ...f, namaAgenda: e.target.value }))}
@@ -302,49 +303,85 @@ export default function AgendaPage() {
                   />
                 </FormField>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Penyelenggara & Kategori */}
+                <div className="grid sm:grid-cols-2 gap-4">
                   <FormField label="Penyelenggara" required>
-                    <input className="input" placeholder="Nama penyelenggara" value={form.penyelenggara} onChange={e => setForm(f => ({ ...f, penyelenggara: e.target.value }))} required />
+                    <input
+                      className="input-field"
+                      placeholder="Nama penyelenggara"
+                      value={form.penyelenggara}
+                      onChange={e => setForm(f => ({ ...f, penyelenggara: e.target.value }))}
+                      required
+                    />
                   </FormField>
                   <FormField label="Kategori">
-                    <select className="input" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>
+                    <select className="input-field" value={form.kategori} onChange={e => setForm(f => ({ ...f, kategori: e.target.value }))}>
                       {KATEGORI_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </FormField>
+                </div>
+
+                {/* Tipe & Tempat */}
+                <div className="grid sm:grid-cols-2 gap-4">
                   <FormField label="Tipe Agenda">
-                    <select className="input" value={form.tipe} onChange={e => setForm(f => ({ ...f, tipe: e.target.value }))}>
+                    <select className="input-field" value={form.tipe} onChange={e => setForm(f => ({ ...f, tipe: e.target.value }))}>
                       {TIPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </FormField>
                   <FormField label="Tempat" required>
-                    <input className="input" placeholder="Lokasi kegiatan" value={form.tempat} onChange={e => setForm(f => ({ ...f, tempat: e.target.value }))} required />
+                    <input
+                      className="input-field"
+                      placeholder="Lokasi kegiatan"
+                      value={form.tempat}
+                      onChange={e => setForm(f => ({ ...f, tempat: e.target.value }))}
+                      required
+                    />
                   </FormField>
                 </div>
 
-                {/* Waktu */}
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <p className="text-sm font-medium text-gray-700">Jadwal Kegiatan</p>
-                  <div className="grid grid-cols-2 gap-3">
+                {/* Jadwal */}
+                <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+                  <p className="text-sm font-semibold text-gray-700">Jadwal Kegiatan</p>
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <FormField label="Tanggal" required>
-                      <input type="date" className="input" value={form.tanggal} onChange={e => setForm(f => ({ ...f, tanggal: e.target.value }))} required />
+                      <input
+                        type="date"
+                        className="input-field"
+                        value={form.tanggal}
+                        onChange={e => setForm(f => ({ ...f, tanggal: e.target.value }))}
+                        required
+                      />
                     </FormField>
                     <FormField label="Zona Waktu">
-                      <select className="input" value={form.zonaWaktu} onChange={e => setForm(f => ({ ...f, zonaWaktu: e.target.value }))}>
+                      <select className="input-field" value={form.zonaWaktu} onChange={e => setForm(f => ({ ...f, zonaWaktu: e.target.value }))}>
                         {ZONA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value} – {o.full}</option>)}
                       </select>
                     </FormField>
                     <FormField label="Waktu Mulai" required>
-                      <input type="time" className="input" value={form.waktuMulai} onChange={e => setForm(f => ({ ...f, waktuMulai: e.target.value }))} required />
+                      <input
+                        type="time"
+                        className="input-field"
+                        value={form.waktuMulai}
+                        onChange={e => setForm(f => ({ ...f, waktuMulai: e.target.value }))}
+                        required
+                      />
                     </FormField>
                     <FormField label="Waktu Selesai" required>
-                      <input type="time" className="input" value={form.waktuSelesai} onChange={e => setForm(f => ({ ...f, waktuSelesai: e.target.value }))} required />
+                      <input
+                        type="time"
+                        className="input-field"
+                        value={form.waktuSelesai}
+                        onChange={e => setForm(f => ({ ...f, waktuSelesai: e.target.value }))}
+                        required
+                      />
                     </FormField>
                   </div>
                 </div>
 
+                {/* Deskripsi */}
                 <FormField label="Deskripsi">
                   <textarea
-                    className="input min-h-[80px] resize-none"
+                    className="input-field min-h-[80px] resize-none"
                     placeholder="Keterangan tambahan tentang agenda..."
                     value={form.deskripsi}
                     onChange={e => setForm(f => ({ ...f, deskripsi: e.target.value }))}
