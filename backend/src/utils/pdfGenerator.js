@@ -699,17 +699,38 @@ function renderTable(doc, table, x, startY) {
 
 // ── KOP SURAT (dipakai di setiap halaman) ─────────────────────────────────────
 async function drawKopSurat(doc, organisasi, pageY) {
-  // Support Railway volume mount path
+  // Resolve base upload directory
   const BASE_UPLOAD = process.env.UPLOAD_DIR
-    ? (process.env.UPLOAD_DIR.startsWith('/') ? process.env.UPLOAD_DIR : path.join(__dirname, '../../', process.env.UPLOAD_DIR))
+    ? (process.env.UPLOAD_DIR.startsWith('/')
+        ? process.env.UPLOAD_DIR
+        : path.join(__dirname, '../../', process.env.UPLOAD_DIR))
     : path.join(__dirname, '../../uploads');
 
-  const logoPath = organisasi.logoPath
-    ? (organisasi.logoPath.startsWith('/uploads')
-        ? path.join(BASE_UPLOAD, organisasi.logoPath.replace('/uploads', ''))
-        : path.join(__dirname, '../../', organisasi.logoPath))
-    : null;
+  // Resolve path logo dari berbagai format yang mungkin tersimpan di DB
+  let logoPath = null;
+  if (organisasi.logoPath) {
+    const lp = organisasi.logoPath;
+    if (path.isAbsolute(lp)) {
+      // Path absolut langsung
+      logoPath = lp;
+    } else if (lp.startsWith('/uploads/')) {
+      // Format: /uploads/logos/file.png
+      logoPath = path.join(BASE_UPLOAD, lp.replace(/^\/uploads/, ''));
+    } else if (lp.startsWith('uploads/')) {
+      // Format: uploads/logos/file.png
+      logoPath = path.join(path.join(__dirname, '../../'), lp);
+    } else {
+      // Fallback
+      logoPath = path.join(BASE_UPLOAD, lp);
+    }
+  }
+
   const hasLogo = logoPath && fs2.existsSync(logoPath);
+
+  // Debug log untuk troubleshooting
+  if (organisasi.logoPath && !hasLogo) {
+    console.log('⚠️ Logo tidak ditemukan:', logoPath, '| logoPath DB:', organisasi.logoPath);
+  }
 
   const tingkatan = organisasi.tingkatanOrg || 'Pimpinan Cabang';
   const namaOrg   = organisasi.namaOrg      || 'Fatayat Nahdlatul Ulama';

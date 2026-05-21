@@ -10,7 +10,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Mobile sidebar overlay */}
+      {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -23,20 +23,12 @@ export default function DashboardLayout() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar — fixed width, tidak ikut flex-shrink */}
-      <div className="hidden lg:block w-64 flex-shrink-0 h-full">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
+      {/* Sidebar — mengelola tampilan desktop & mobile sendiri */}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Mobile sidebar */}
-      <div className="lg:hidden">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main content — flex-1 agar mengisi sisa lebar */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-
         <main className="flex-1 overflow-y-auto">
           <motion.div
             key={location.pathname}

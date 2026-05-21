@@ -41,7 +41,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const filteredNav = navItems.filter(item => item.roles.includes(user?.role))
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-gray-100">
+    <div className="flex flex-col h-full bg-white border-r border-gray-100 overflow-hidden">
       {/* Logo & Org Name */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100">
         <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
@@ -120,7 +120,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex w-64 flex-shrink-0">
+      <div className="hidden lg:flex w-64 flex-shrink-0 h-screen">
         {sidebarContent}
       </div>
 
