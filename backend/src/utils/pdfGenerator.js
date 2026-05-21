@@ -1,16 +1,16 @@
-// ── DEPENDENCIES ─────────────────────────────────────────────────────────────
+// ── DEPENDENCIES ──────────────────────────────────────────────────────────[...]
 const PDFDocument = require('pdfkit');
 const path        = require('path');
 const fs2         = require('fs');
 const { generateQRCodeDataURL } = require('./qrcode');
 
-// ── FONT PATHS ────────────────────────────────────────────────────────────────
+// ── FONT PATHS ────────────────────────────────────────────────────────────[...]
 const FONTS_DIR  = path.join(__dirname, 'fonts');
 const FONT_ARAB_R = path.join(FONTS_DIR, 'TraditionalArabic.ttf');
 const FONT_ARAB_B = path.join(FONTS_DIR, 'TraditionalArabicBold.ttf');
 const HAS_ARAB    = fs2.existsSync(FONT_ARAB_R);
 
-// ── FONT NAMES ────────────────────────────────────────────────────────────────
+// ── FONT NAMES ───────────────────────────────────────────────────────────[...]
 const F_REG       = 'Times-Roman';
 const F_BOLD      = 'Times-Bold';
 const F_ITAL      = 'Times-Italic';
@@ -18,7 +18,7 @@ const F_BOLD_ITAL = 'Times-BoldItalic';
 const F_ARAB      = 'ArabFont';
 const F_ARAB_BOLD = 'ArabFontBold';
 
-// ── PAGE CONSTANTS ────────────────────────────────────────────────────────────
+// ── PAGE CONSTANTS ─────────────────────────────────────────────────────────[...]
 const ML = 57;   // margin left
 const MR = 57;   // margin right
 const MT = 35;   // margin top
@@ -26,7 +26,7 @@ const PW = 595.28;
 const PH = 841.89;
 const CW = PW - ML - MR;
 
-// ── FONT SIZES ────────────────────────────────────────────────────────────────
+// ── FONT SIZES ───────────────────────────────────────────────────────────[...]
 const FS_ISI          = 11;
 const FS_ARAB         = 14;
 const LINE_GAP        = 2;
@@ -36,12 +36,12 @@ const FS_KOP_DAERAH   = 11;
 const FS_KOP_ALAMAT   = 8.5;
 const FS_KOP_KONTAK   = 7.5;
 
-// ── COLOURS ───────────────────────────────────────────────────────────────────
+// ── COLOURS ────────────────────────────────────────────────────────────[...]
 const GREEN      = '#166534';
 const LINK_COLOR = '#1a56db';
 const TAB_W      = 24;
 
-// ── ARABIC ───────────────────────────────────────────────────────────────────
+// ── ARABIC ─────────────────────────────────────────────────────────────[...]
 let arabicReshaper;
 try { arabicReshaper = require('arabic-reshaper'); } catch (_) {}
 
@@ -65,7 +65,7 @@ function registerArabFonts(doc) {
   } catch (_) {}
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
+// ── HELPERS ────────────────────────────────────────────────────────────[...]
 function pickFont(b, i) {
   return b && i ? F_BOLD_ITAL : b ? F_BOLD : i ? F_ITAL : F_REG;
 }
@@ -108,7 +108,38 @@ function extractAlign(t) {
   return null;
 }
 
-// ── INLINE PARSER ─────────────────────────────────────────────────────────────
+// ── HELPER: Resolve Logo Path ────────────────────────────────────────────
+function resolveLogoPath(logoPathFromDB) {
+  if (!logoPathFromDB) return null;
+  
+  const BASE_UPLOAD = process.env.UPLOAD_DIR
+    ? (process.env.UPLOAD_DIR.startsWith('/')
+        ? process.env.UPLOAD_DIR
+        : path.join(__dirname, '../../', process.env.UPLOAD_DIR))
+    : path.join(__dirname, '../../uploads');
+
+  const lp = logoPathFromDB.trim();
+  
+  // Jika path absolut, gunakan langsung
+  if (path.isAbsolute(lp)) {
+    return lp;
+  }
+  
+  // Jika path dengan /uploads/, resolve dari uploads
+  if (lp.startsWith('/uploads/')) {
+    return path.join(BASE_UPLOAD, lp.replace(/^\/uploads\//, ''));
+  }
+  
+  // Jika path dengan uploads/, resolve dari project root
+  if (lp.startsWith('uploads/')) {
+    return path.join(path.join(__dirname, '../../'), lp);
+  }
+  
+  // Fallback: tambahkan ke BASE_UPLOAD
+  return path.join(BASE_UPLOAD, lp);
+}
+
+// ── INLINE PARSER ─────────────────────────────────────────────────────────[...]
 function parseInline(html) {
   if (!html) return [{ text: '', b: false, i: false, u: false, link: null }];
   const segs = [];
@@ -149,7 +180,7 @@ function parseInline(html) {
   return segs.length ? segs : [{ text: '', b: false, i: false, u: false, link: null }];
 }
 
-// ── RENDER HELPERS ────────────────────────────────────────────────────────────
+// ── RENDER HELPERS ──────────────────────────────────────────────────────────[...]
 function splitByNL(segs) {
   const lines = [[]];
   for (const seg of segs) {
@@ -264,7 +295,7 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
   return y;
 }
 
-// ── HTML PARSER ───────────────────────────────────────────────────────────────
+// ── HTML PARSER ───────────────────────────────────────────────────────────[...]
 function parseParas(html, blocks) {
   // Tangkap p, h1-h6, div, li (dengan konteks ol/ul untuk numbering)
   const re = /<(p|h[1-6]|div)([^>]*)>([\s\S]*?)<\/\1>/gi;
@@ -536,7 +567,7 @@ function estimateBlockHeight(doc, block) {
   return lines.length * (FS_ISI * 1.45 + LINE_GAP);
 }
 
-// ── RENDER TABLE ──────────────────────────────────────────────────────────────
+// ── RENDER TABLE ──────────────────────────────────────────────────────────[...]
 function renderTable(doc, table, x, startY) {
   const { headers, rows, borderless } = table;
   const allRows = headers.length ? [headers, ...rows] : rows;
@@ -699,37 +730,14 @@ function renderTable(doc, table, x, startY) {
 
 // ── KOP SURAT (dipakai di setiap halaman) ─────────────────────────────────────
 async function drawKopSurat(doc, organisasi, pageY) {
-  // Resolve base upload directory
-  const BASE_UPLOAD = process.env.UPLOAD_DIR
-    ? (process.env.UPLOAD_DIR.startsWith('/')
-        ? process.env.UPLOAD_DIR
-        : path.join(__dirname, '../../', process.env.UPLOAD_DIR))
-    : path.join(__dirname, '../../uploads');
-
-  // Resolve path logo dari berbagai format yang mungkin tersimpan di DB
-  let logoPath = null;
-  if (organisasi.logoPath) {
-    const lp = organisasi.logoPath;
-    if (path.isAbsolute(lp)) {
-      // Path absolut langsung
-      logoPath = lp;
-    } else if (lp.startsWith('/uploads/')) {
-      // Format: /uploads/logos/file.png
-      logoPath = path.join(BASE_UPLOAD, lp.replace(/^\/uploads/, ''));
-    } else if (lp.startsWith('uploads/')) {
-      // Format: uploads/logos/file.png
-      logoPath = path.join(path.join(__dirname, '../../'), lp);
-    } else {
-      // Fallback
-      logoPath = path.join(BASE_UPLOAD, lp);
-    }
-  }
-
+  // Resolve logo path dengan helper function yang lebih robust
+  const logoPath = organisasi.logoPath ? resolveLogoPath(organisasi.logoPath) : null;
   const hasLogo = logoPath && fs2.existsSync(logoPath);
 
   // Debug log untuk troubleshooting
   if (organisasi.logoPath && !hasLogo) {
-    console.log('⚠️ Logo tidak ditemukan:', logoPath, '| logoPath DB:', organisasi.logoPath);
+    console.warn('⚠️ Logo tidak ditemukan:', logoPath, '| Original DB path:', organisasi.logoPath);
+    console.warn('   Pastikan file ada di lokasi yang benar dan permissions tercukup');
   }
 
   const tingkatan = organisasi.tingkatanOrg || 'Pimpinan Cabang';
@@ -768,9 +776,13 @@ async function drawKopSurat(doc, organisasi, pageY) {
       // Posisikan vertikal di tengah area kop
       const logoY = y + (logoMaxSize - drawH) / 2;
       doc.image(logoPath, logoX, logoY, { width: drawW, height: drawH });
-    } catch (_) {
+      console.log('✅ Logo berhasil ditampilkan:', logoPath);
+    } catch (err) {
       // Fallback: render dengan lebar saja, biarkan PDFKit hitung tinggi
-      try { doc.image(logoPath, logoX, y, { width: logoMaxSize }); } catch (_) {}
+      console.warn('⚠️ Error rendering logo:', err.message);
+      try { doc.image(logoPath, logoX, y, { width: logoMaxSize }); } catch (e) {
+        console.error('❌ Gagal menampilkan logo:', e.message);
+      }
     }
   }
 
@@ -817,7 +829,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
   return lineY + 10;
 }
 
-// ── IDENTITAS SURAT ───────────────────────────────────────────────────────────
+// ── IDENTITAS SURAT ─────────────────────────────────────────────────────────[...]
 // Untuk layout rutin (A/B): hanya Nomor, Lampiran, Perihal — tanggal dipindah ke bawah isi surat
 function drawIdentitasSurat(doc, surat, startY) {
   let y = startY + 4;
@@ -843,7 +855,7 @@ function drawIdentitasSurat(doc, surat, startY) {
   return y + 8;
 }
 
-// ── TUJUAN SURAT ──────────────────────────────────────────────────────────────
+// ── TUJUAN SURAT ──────────────────────────────────────────────────────────[...]
 function drawTujuan(doc, surat, startY) {
   let y = startY;
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
@@ -911,7 +923,7 @@ function renderListItem(doc, block, x, y, maxW) {
   return doc.y + 2;
 }
 
-// ── RENDER SATU BLOCK ─────────────────────────────────────────────────────────
+// ── RENDER SATU BLOCK ─────────────────────────────────────────────────────────[...]
 function renderBlock(doc, block, y) {
   if (block.type === 'empty') {
     return y + FS_ISI * 1.2;
@@ -974,7 +986,7 @@ async function renderBodyBlocks(doc, blocks, startY, kopHeight, organisasi, foot
   return y;
 }
 
-// ── TANDA TANGAN ──────────────────────────────────────────────────────────────
+// ── TANDA TANGAN ──────────────────────────────────────────────────────────[...]
 // Layout baru: hanya Kepala yang tanda tangan, posisi rata kiri di sisi kanan halaman
 async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
   const blokW  = 200;                    // lebar blok TTD
@@ -1421,7 +1433,7 @@ async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RES
   }
 }
 
-// ── MAIN EXPORT ───────────────────────────────────────────────────────────────
+// ── MAIN EXPORT ──────────────────────────────────────────────────────────[...]
 async function generateSuratPDF(surat, organisasi) {
   const uploadDir = path.join(__dirname, '../../uploads/pdf');
   if (!fs2.existsSync(uploadDir)) fs2.mkdirSync(uploadDir, { recursive: true });
