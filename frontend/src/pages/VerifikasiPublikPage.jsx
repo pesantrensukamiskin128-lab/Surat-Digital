@@ -71,9 +71,9 @@ export default function VerifikasiPublikPage() {
             <div className="p-6 space-y-5">
               {/* Organisasi */}
               <div className="flex items-start gap-3 p-4 bg-primary-50 rounded-xl">
-                {orgData?.logoPath ? (
+                {data.data.organisasi?.logoPath ? (
                   <img
-                    src={getUploadUrl(orgData.logoPath)}
+                    src={getUploadUrl(data.data.organisasi.logoPath)}
                     alt="Logo"
                     className="w-12 h-12 object-contain flex-shrink-0 mt-1"
                   />

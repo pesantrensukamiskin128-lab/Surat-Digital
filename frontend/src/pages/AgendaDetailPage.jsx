@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { agendaAPI, organisasiAPI } from '../services/api'
+import { agendaAPI, organisasiAPI, getUploadUrl } from '../services/api'
 import useAuthStore from '../store/authStore'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -77,9 +77,7 @@ export default function AgendaDetailPage() {
     ctx.restore()
 
     // ── Logo organisasi (bulat, di tengah atas) ──
-    const logoSrc = orgData?.logoPath
-      ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}/uploads/logos/${orgData.logoPath.split('/').pop()}`
-      : '/logo-org.png'
+    const logoSrc = orgData?.logoPath ? getUploadUrl(orgData.logoPath) : '/logo-org.png'
     const logoImg = await loadImage(logoSrc)
 
     const logoMaxSize = 100
