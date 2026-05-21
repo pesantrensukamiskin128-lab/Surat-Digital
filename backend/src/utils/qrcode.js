@@ -21,7 +21,7 @@ async function generateQRCode(token, suratId) {
   const qrDir = path.join(BASE_UPLOAD, 'qrcodes');
   ensureDir(qrDir);
   
-  const frontendUrl = process.env.FRONTEND_URL || 'https://sirama.masyppsukamiskin.sch.id';
+  const frontendUrl = 'https://sirama.masyppsukamiskin.sch.id';
   const verifikasiUrl = `${frontendUrl}/verifikasi/${token}`;
   
   const filename = `qr-${suratId}.png`;
@@ -44,7 +44,7 @@ async function generateQRCode(token, suratId) {
  * Generate QR Code sebagai Data URL (base64)
  */
 async function generateQRCodeDataURL(token) {
-  const frontendUrl = process.env.FRONTEND_URL || 'https://sirama.masyppsukamiskin.sch.id';
+  const frontendUrl = 'https://sirama.masyppsukamiskin.sch.id';
   const verifikasiUrl = `${frontendUrl}/verifikasi/${token}`;
   
   const dataUrl = await QRCode.toDataURL(verifikasiUrl, {
