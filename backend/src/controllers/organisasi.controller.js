@@ -38,10 +38,13 @@ const updateProfil = async (req, res) => {
 
     if (req.file) {
       if (profil?.logoPath) {
+        // Path lama disimpan sebagai uploads/logos/... (relative)
         const old = path.join(__dirname, '../..', profil.logoPath);
         if (fs.existsSync(old)) fs.unlinkSync(old);
       }
-      updateData.logoPath = `/uploads/logos/${req.file.filename}`;
+      // Simpan path RELATIVE dari project root (uploads/logos/filename)
+      // Ini memudahkan pdfGenerator.js membaca file dengan path.join(__dirname, '../../', logoPath)
+      updateData.logoPath = `uploads/logos/${req.file.filename}`;
     }
 
     profil = profil
