@@ -77,7 +77,44 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Endpoint seed — dilindungi SETUP_SECRET
+// Endpoint debug path logo — hapus setelah masalah teratasi
+app.get('/api/setup/logo-check', async (req, res) => {
+  const secret = req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  const prisma = require('./config/prisma');
+  const fs = require('fs');
+  const path = require('path');
+  try {
+    const profil = await prisma.organisasiProfil.findFirst();
+    const logoPath = profil?.logoPath;
+    const UPLOAD_DIR = process.env.UPLOAD_DIR || 'uploads';
+    const BASE_UPLOAD = UPLOAD_DIR.startsWith('/')
+      ? UPLOAD_DIR
+      : path.join(__dirname, '../', UPLOAD_DIR);
+
+    // Coba berbagai kemungkinan path
+    const candidates = logoPath ? [
+      path.join(BASE_UPLOAD, logoPath.replace(/^\/uploads/, '')),
+      path.join(__dirname, '../uploads', logoPath.replace(/^\/uploads\//, '')),
+      path.join(__dirname, '../../uploads', logoPath.replace(/^\/uploads\//, '')),
+      logoPath,
+    ] : [];
+
+    const results = candidates.map(p => ({ path: p, exists: fs.existsSync(p) }));
+
+    res.json({
+      logoPathDB: logoPath,
+      UPLOAD_DIR: process.env.UPLOAD_DIR,
+      BASE_UPLOAD,
+      __dirname,
+      candidates: results,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 app.post('/api/setup/seed', async (req, res) => {
   const secret = req.headers['x-setup-secret'];
   if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
