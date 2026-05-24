@@ -160,14 +160,14 @@ const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   autoMigrate().then(() => {
     app.listen(PORT, () => {
-      console.log(`🚀 SAFIRA berjalan di port ${PORT}`);
+      console.log(`🚀 SIRAMA berjalan di port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 App URL: https://madina.masyppsukamiskin.sch.id`);
+      console.log(`🌐 App URL: https://sirama.masyppsukamiskin.sch.id`);
     });
   });
 } else {
   app.listen(PORT, () => {
-    console.log(`🚀 SAFIRA berjalan di port ${PORT}`);
+    console.log(`🚀 SIRAMA berjalan di port ${PORT}`);
   });
 }
 
