@@ -129,6 +129,30 @@ app.post('/api/setup/seed', async (req, res) => {
   }
 });
 
+// Endpoint trigger migration manual (untuk deploy tanpa restart)
+app.post('/api/setup/migrate', async (req, res) => {
+  const secret = req.headers['x-setup-secret'] || req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  try {
+    const { execSync } = require('child_process');
+    const rootDir = path.join(__dirname, '../');
+    const output = execSync('node node_modules/prisma/build/index.js migrate deploy', {
+      cwd: rootDir,
+      stdio: 'pipe',
+      env: { ...process.env },
+      timeout: 60000,
+    });
+    res.json({ success: true, message: 'Migrasi selesai', output: output.toString() });
+  } catch (err) {
+    const stderr = err.stderr?.toString() || '';
+    const stdout = err.stdout?.toString() || '';
+    console.error('Migration error:', err.message, stderr);
+    res.status(500).json({ success: false, message: err.message, stderr, stdout });
+  }
+});
+
 // Serve frontend React (production)
 // Harus setelah semua route /api agar tidak tertimpa
 const publicDir = path.join(__dirname, '../public');
