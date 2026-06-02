@@ -7,11 +7,13 @@ const api = axios.create({
 })
 
 // Helper untuk URL file upload — prefix dengan backend URL
-export const getUploadUrl = (path) => {
-  if (!path) return null
-  if (path.startsWith('http')) return path
+export const getUploadUrl = (filePath) => {
+  if (!filePath) return null
+  if (filePath.startsWith('http')) return filePath
   const base = (import.meta.env.VITE_API_URL || '').replace('/api', '')
-  return `${base}${path}`
+  // Pastikan ada separator '/' antara base dan path
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
+  return `${base}${normalizedPath}`
 }
 
 // Request interceptor - tambah token
