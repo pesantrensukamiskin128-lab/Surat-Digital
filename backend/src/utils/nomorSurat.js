@@ -2,6 +2,9 @@ const prisma = require('../config/prisma');
 
 const BULAN_ROMAWI = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 
+// Kode klasifikasi surat — statis sesuai ketentuan organisasi
+const KODE_KLASIFIKASI = 'PP.06';
+
 /**
  * Buat singkatan dari tingkatan dan nama organisasi
  * Contoh: "Pimpinan Cabang" + "Fatayat Nahdlatul Ulama" → "PC-FNU"
@@ -26,7 +29,7 @@ function buatSingkatan(tingkatan, namaOrg) {
  * - 001     = urutan surat bulan ini
  * - A       = jenis surat (A/B/C/SK/...)
  * - PC-FNU  = singkatan tingkatan + nama org
- * - PP.06   = kode klasifikasi surat (dari profil organisasi)
+ * - PP.06   = kode klasifikasi (statis)
  * - V       = bulan romawi
  * - 2026    = tahun
  */
@@ -48,13 +51,12 @@ async function generateNomorSurat(jenisSurat = 'A') {
   const urutan = String(count + 1).padStart(3, '0');
 
   // Ambil profil organisasi
-  const profil          = await prisma.organisasiProfil.findFirst();
-  const tingkatan       = profil?.tingkatanOrg      || 'Pimpinan Cabang';
-  const namaOrg         = profil?.namaOrg           || 'Fatayat Nahdlatul Ulama';
-  const kodeKlasifikasi = profil?.kodeKlasifikasi   || 'PP.06';
-  const singkatan       = buatSingkatan(tingkatan, namaOrg);
+  const profil    = await prisma.organisasiProfil.findFirst();
+  const tingkatan = profil?.tingkatanOrg || 'Pimpinan Cabang';
+  const namaOrg   = profil?.namaOrg      || 'Fatayat Nahdlatul Ulama';
+  const singkatan = buatSingkatan(tingkatan, namaOrg);
 
-  return `${urutan}/${jenisSurat}/${singkatan}/${kodeKlasifikasi}/${BULAN_ROMAWI[bulan - 1]}/${tahun}`;
+  return `${urutan}/${jenisSurat}/${singkatan}/${KODE_KLASIFIKASI}/${BULAN_ROMAWI[bulan - 1]}/${tahun}`;
 }
 
 module.exports = { generateNomorSurat, buatSingkatan };
