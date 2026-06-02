@@ -10,7 +10,15 @@ const ensureDir = (dir) => {
   }
 };
 
-// Resolve logo path dari DB ke absolute filesystem path
+// URL frontend — selalu gunakan production URL jika bukan development lokal
+function getFrontendUrl() {
+  const envUrl = process.env.FRONTEND_URL || '';
+  // Jika env kosong atau masih localhost, paksa pakai URL production
+  if (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1')) {
+    return 'https://sirama.masyppsukamiskin.sch.id';
+  }
+  return envUrl;
+}
 function resolveLogoPath(logoPathFromDB) {
   if (!logoPathFromDB) return null;
   const BASE_UPLOAD = process.env.UPLOAD_DIR
@@ -96,7 +104,7 @@ async function generateQRCode(token, suratId) {
   const qrDir = path.join(BASE_UPLOAD, 'qrcodes');
   ensureDir(qrDir);
 
-  const frontendUrl    = process.env.FRONTEND_URL || 'https://sirama.masyppsukamiskin.sch.id';
+  const frontendUrl    = getFrontendUrl();
   const verifikasiUrl  = `${frontendUrl}/verifikasi/${token}`;
   const qrSize         = 400; // lebih besar agar logo tetap proporsional
 
@@ -131,7 +139,7 @@ async function generateQRCode(token, suratId) {
  * Generate QR Code sebagai Data URL (base64) — untuk embed di PDF
  */
 async function generateQRCodeDataURL(token) {
-  const frontendUrl   = process.env.FRONTEND_URL || 'https://sirama.masyppsukamiskin.sch.id';
+  const frontendUrl   = getFrontendUrl();
   const verifikasiUrl = `${frontendUrl}/verifikasi/${token}`;
   const qrSize        = 300;
 
