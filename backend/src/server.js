@@ -153,6 +153,37 @@ app.post('/api/setup/migrate', async (req, res) => {
   }
 });
 
+// Endpoint regenerate semua QR Code surat SELESAI (fix URL salah)
+app.post('/api/setup/regenerate-qr', async (req, res) => {
+  const secret = req.headers['x-setup-secret'] || req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  try {
+    const prisma = require('./config/prisma');
+    const { generateQRCode } = require('./utils/qrcode');
+    const suratList = await prisma.suratKeluar.findMany({
+      where: { status: 'SELESAI', qrCodeToken: { not: null } },
+      select: { id: true, qrCodeToken: true },
+    });
+    let ok = 0, fail = 0;
+    for (const surat of suratList) {
+      try {
+        const qrPath = await generateQRCode(surat.qrCodeToken, surat.id);
+        await prisma.suratKeluar.update({ where: { id: surat.id }, data: { qrCodePath: qrPath } });
+        ok++;
+      } catch (e) {
+        console.error(`QR regenerate gagal untuk surat ${surat.id}:`, e.message);
+        fail++;
+      }
+    }
+    res.json({ success: true, message: `Regenerasi selesai: ${ok} berhasil, ${fail} gagal`, total: suratList.length, ok, fail });
+  } catch (err) {
+    console.error('Regenerate QR error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Serve frontend React (production)
 // Harus setelah semua route /api agar tidak tertimpa
 const publicDir = path.join(__dirname, '../public');
