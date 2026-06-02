@@ -78,6 +78,7 @@ model OrganisasiProfil {
   telepon         String   @default("")
   email           String   @default("")
   website         String   @default("")
+  kodeKlasifikasi String   @default("PP.06")
   logoPath        String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

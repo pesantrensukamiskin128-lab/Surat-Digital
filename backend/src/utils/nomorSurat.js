@@ -22,15 +22,16 @@ function buatSingkatan(tingkatan, namaOrg) {
 
 /**
  * Generate nomor surat otomatis
- * Format: 001/A/PC-FNU/V/2026
- * - 001 = urutan surat bulan ini
- * - A   = jenis surat (A/B/C/SK)
- * - PC-FNU = singkatan tingkatan + nama org
- * - V   = bulan romawi
- * - 2026 = tahun
+ * Format: 001/A/PC-FNU/PP.06/V/2026
+ * - 001     = urutan surat bulan ini
+ * - A       = jenis surat (A/B/C/SK/...)
+ * - PC-FNU  = singkatan tingkatan + nama org
+ * - PP.06   = kode klasifikasi surat (dari profil organisasi)
+ * - V       = bulan romawi
+ * - 2026    = tahun
  */
 async function generateNomorSurat(jenisSurat = 'A') {
-  const now = new Date();
+  const now   = new Date();
   const tahun = now.getFullYear();
   const bulan = now.getMonth() + 1;
 
@@ -47,12 +48,13 @@ async function generateNomorSurat(jenisSurat = 'A') {
   const urutan = String(count + 1).padStart(3, '0');
 
   // Ambil profil organisasi
-  const profil = await prisma.organisasiProfil.findFirst();
-  const tingkatan = profil?.tingkatanOrg || 'Pimpinan Cabang';
-  const namaOrg   = profil?.namaOrg      || 'Fatayat Nahdlatul Ulama';
-  const singkatan = buatSingkatan(tingkatan, namaOrg);
+  const profil          = await prisma.organisasiProfil.findFirst();
+  const tingkatan       = profil?.tingkatanOrg      || 'Pimpinan Cabang';
+  const namaOrg         = profil?.namaOrg           || 'Fatayat Nahdlatul Ulama';
+  const kodeKlasifikasi = profil?.kodeKlasifikasi   || 'PP.06';
+  const singkatan       = buatSingkatan(tingkatan, namaOrg);
 
-  return `${urutan}/${jenisSurat}/${singkatan}/${BULAN_ROMAWI[bulan - 1]}/${tahun}`;
+  return `${urutan}/${jenisSurat}/${singkatan}/${kodeKlasifikasi}/${BULAN_ROMAWI[bulan - 1]}/${tahun}`;
 }
 
 module.exports = { generateNomorSurat, buatSingkatan };

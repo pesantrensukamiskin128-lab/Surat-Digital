@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const path = require('path');
 const fs = require('fs');
+const { resetLogoCache } = require('../utils/qrcode');
 
 const getProfil = async (req, res) => {
   try {
@@ -23,17 +24,18 @@ const getProfil = async (req, res) => {
 
 const updateProfil = async (req, res) => {
   try {
-    const { tingkatanOrg, namaOrg, daerahOrg, alamat, telepon, email, website } = req.body;
+    const { tingkatanOrg, namaOrg, daerahOrg, alamat, telepon, email, website, kodeKlasifikasi } = req.body;
     let profil = await prisma.organisasiProfil.findFirst();
 
     const updateData = {
-      tingkatanOrg: tingkatanOrg ?? profil?.tingkatanOrg ?? 'Pimpinan Cabang',
-      namaOrg:      namaOrg      ?? profil?.namaOrg      ?? 'Fatayat Nahdlatul Ulama',
-      daerahOrg:    daerahOrg    ?? profil?.daerahOrg    ?? 'Kota Bandung',
-      alamat:       alamat       !== undefined ? alamat   : (profil?.alamat   || ''),
-      telepon:      telepon      !== undefined ? telepon  : (profil?.telepon  || ''),
-      email:        email        !== undefined ? email    : (profil?.email    || ''),
-      website:      website      !== undefined ? website  : (profil?.website  || ''),
+      tingkatanOrg:    tingkatanOrg    ?? profil?.tingkatanOrg    ?? 'Pimpinan Cabang',
+      namaOrg:         namaOrg         ?? profil?.namaOrg         ?? 'Fatayat Nahdlatul Ulama',
+      daerahOrg:       daerahOrg       ?? profil?.daerahOrg       ?? 'Kota Bandung',
+      alamat:          alamat          !== undefined ? alamat      : (profil?.alamat   || ''),
+      telepon:         telepon         !== undefined ? telepon     : (profil?.telepon  || ''),
+      email:           email           !== undefined ? email       : (profil?.email    || ''),
+      website:         website         !== undefined ? website     : (profil?.website  || ''),
+      kodeKlasifikasi: kodeKlasifikasi !== undefined ? kodeKlasifikasi : (profil?.kodeKlasifikasi || 'PP.06'),
     };
 
     if (req.file) {
@@ -51,6 +53,9 @@ const updateProfil = async (req, res) => {
       ? await prisma.organisasiProfil.update({ where: { id: profil.id }, data: updateData })
       : await prisma.organisasiProfil.create({ data: updateData });
 
+    // Reset cache logo QR code agar surat berikutnya pakai logo terbaru
+    if (req.file) resetLogoCache();
+
     res.json({ success: true, message: 'Profil organisasi diperbarui', data: profil });
   } catch (err) {
     console.error(err);
@@ -65,6 +70,7 @@ const deleteLogo = async (req, res) => {
     const logoPath = path.join(__dirname, '../..', profil.logoPath);
     if (fs.existsSync(logoPath)) fs.unlinkSync(logoPath);
     await prisma.organisasiProfil.update({ where: { id: profil.id }, data: { logoPath: null } });
+    resetLogoCache();
     res.json({ success: true, message: 'Logo dihapus' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });

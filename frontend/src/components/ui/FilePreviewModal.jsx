@@ -1,6 +1,9 @@
 import { Fragment, useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon, DocumentIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, DocumentIcon, ArrowDownTrayIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
+
+// Deteksi apakah perangkat mobile / tidak support iframe PDF
+const isMobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
 
 /**
  * FilePreviewModal
@@ -12,11 +15,16 @@ import { XMarkIcon, DocumentIcon, ArrowDownTrayIcon } from '@heroicons/react/24/
  *  - fileType: string  — mime type awal (opsional, akan di-override dari response header)
  */
 export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, fileType: fileTypeProp }) {
-  const [blobUrl, setBlobUrl]     = useState(null)
-  const [mimeType, setMimeType]   = useState(null)
-  const [realName, setRealName]   = useState(fileName || 'file')
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState(null)
+  const [blobUrl, setBlobUrl]   = useState(null)
+  const [mimeType, setMimeType] = useState(null)
+  const [realName, setRealName] = useState(fileName || 'file')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
+  const [mobile, setMobile]     = useState(false)
+
+  useEffect(() => {
+    setMobile(isMobile())
+  }, [])
 
   useEffect(() => {
     if (!isOpen || !fileUrl) return
@@ -37,8 +45,8 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
         setMimeType(mime)
 
         // Ambil nama file dari header X-File-Name atau Content-Disposition
-        const xName = res.headers.get('X-File-Name')
-        const cd    = res.headers.get('Content-Disposition') || ''
+        const xName  = res.headers.get('X-File-Name')
+        const cd     = res.headers.get('Content-Disposition') || ''
         const cdMatch = cd.match(/filename="?([^";\n]+)"?/i)
         const detectedName = xName || cdMatch?.[1] || fileName || 'file'
         setRealName(detectedName)
@@ -60,7 +68,6 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
     }
   }, [isOpen, fileUrl])
 
-  // Cleanup saat modal ditutup
   const handleClose = () => {
     if (blobUrl) URL.revokeObjectURL(blobUrl)
     setBlobUrl(null)
@@ -93,7 +100,7 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
         </Transition.Child>
 
-        <div className="fixed inset-0 flex flex-col p-4">
+        <div className="fixed inset-0 flex flex-col p-2 sm:p-4">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
@@ -101,10 +108,10 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
           >
             <Dialog.Panel className="flex flex-col w-full max-w-4xl mx-auto h-full bg-white rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 flex-shrink-0">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <DocumentIcon className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                  <Dialog.Title className="text-base font-semibold text-gray-900 truncate">
+                  <Dialog.Title className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                     {realName}
                   </Dialog.Title>
                 </div>
@@ -112,11 +119,23 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
                   {blobUrl && (
                     <button
                       onClick={handleDownload}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                     >
                       <ArrowDownTrayIcon className="w-4 h-4" />
-                      Unduh
+                      <span className="hidden sm:inline">Unduh</span>
                     </button>
+                  )}
+                  {/* Tombol buka di tab baru — berguna di mobile */}
+                  {fileUrl && (
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                      <span className="hidden sm:inline">Tab Baru</span>
+                    </a>
                   )}
                   <button
                     onClick={handleClose}
@@ -140,20 +159,18 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
                   <div className="flex flex-col items-center gap-4 p-8 text-center">
                     <DocumentIcon className="w-16 h-16 text-gray-300" />
                     <p className="text-gray-500 text-sm">{error}</p>
-                    <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary"
+                    >
                       <ArrowDownTrayIcon className="w-4 h-4" /> Unduh File
                     </a>
                   </div>
                 )}
 
-                {blobUrl && !loading && isPdf && (
-                  <iframe
-                    src={blobUrl}
-                    className="w-full h-full border-0"
-                    title="Preview PDF"
-                  />
-                )}
-
+                {/* Gambar — tampil normal di semua device */}
                 {blobUrl && !loading && isImage && (
                   <img
                     src={blobUrl}
@@ -162,6 +179,51 @@ export default function FilePreviewModal({ isOpen, onClose, fileUrl, fileName, f
                   />
                 )}
 
+                {/* PDF di desktop: iframe */}
+                {blobUrl && !loading && isPdf && !mobile && (
+                  <iframe
+                    src={blobUrl}
+                    className="w-full h-full border-0"
+                    title="Preview PDF"
+                  />
+                )}
+
+                {/* PDF di mobile: tampilkan opsi aksi */}
+                {blobUrl && !loading && isPdf && mobile && (
+                  <div className="flex flex-col items-center justify-center h-full gap-5 px-8 text-center">
+                    <div className="w-20 h-20 rounded-2xl bg-primary-100 flex items-center justify-center">
+                      <DocumentIcon className="w-10 h-10 text-primary-600" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-gray-800 mb-1">File PDF Siap</p>
+                      <p className="text-sm text-gray-500">
+                        Browser mobile tidak mendukung tampilan PDF langsung.
+                        Gunakan salah satu opsi di bawah ini:
+                      </p>
+                    </div>
+                    <div className="w-full max-w-xs space-y-3">
+                      <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors"
+                      >
+                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                        Buka di Browser
+                      </a>
+                      <button
+                        onClick={handleDownload}
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                        Unduh PDF
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400">{realName}</p>
+                  </div>
+                )}
+
+                {/* Format tidak dikenali */}
                 {blobUrl && !loading && !isPdf && !isImage && (
                   <div className="flex flex-col items-center gap-4 p-8 text-center">
                     <DocumentIcon className="w-16 h-16 text-gray-300" />

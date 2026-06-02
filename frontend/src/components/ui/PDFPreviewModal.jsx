@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon, ArrowDownTrayIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, ArrowDownTrayIcon, DocumentTextIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { suratKeluarAPI } from '../../services/api'
 import { downloadBlob } from '../../utils/helpers'
 import toast from 'react-hot-toast'
+
+// Deteksi apakah perangkat mobile / tidak support iframe PDF
+const isMobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
 
 /**
  * PDFPreviewModal
@@ -15,9 +18,15 @@ import toast from 'react-hot-toast'
  *  - nomorSurat: string — untuk nama file saat download
  */
 export default function PDFPreviewModal({ isOpen, onClose, suratId, nomorSurat }) {
-  const [pdfUrl, setPdfUrl] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [pdfUrl, setPdfUrl]     = useState(null)   // blob URL
+  const [directUrl, setDirectUrl] = useState(null) // URL langsung ke backend (untuk mobile)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
+  const [mobile, setMobile]     = useState(false)
+
+  useEffect(() => {
+    setMobile(isMobile())
+  }, [])
 
   const loadPreview = useCallback(async () => {
     if (!suratId) return
@@ -28,6 +37,13 @@ export default function PDFPreviewModal({ isOpen, onClose, suratId, nomorSurat }
       const blob = new Blob([res.data], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       setPdfUrl(url)
+
+      // Bangun URL langsung ke endpoint (untuk mobile open-in-tab / Google Docs)
+      const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '')
+      const token = (() => {
+        try { return JSON.parse(localStorage.getItem('sirama-auth') || '{}')?.state?.token } catch { return null }
+      })()
+      setDirectUrl(`${base}/api/surat-keluar/${suratId}/preview${token ? `?token=${token}` : ''}`)
     } catch (err) {
       let msg = 'Gagal memuat preview PDF'
       if (err.response?.data instanceof Blob) {
@@ -49,7 +65,6 @@ export default function PDFPreviewModal({ isOpen, onClose, suratId, nomorSurat }
     if (isOpen && suratId) {
       loadPreview()
     }
-    // Cleanup URL object saat modal ditutup
     return () => {
       if (pdfUrl) {
         URL.revokeObjectURL(pdfUrl)
@@ -94,7 +109,7 @@ export default function PDFPreviewModal({ isOpen, onClose, suratId, nomorSurat }
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
         </Transition.Child>
 
-        <div className="fixed inset-0 flex flex-col p-4">
+        <div className="fixed inset-0 flex flex-col p-2 sm:p-4">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-200"
@@ -106,25 +121,38 @@ export default function PDFPreviewModal({ isOpen, onClose, suratId, nomorSurat }
           >
             <Dialog.Panel className="flex flex-col w-full max-w-5xl mx-auto h-full bg-white rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 flex-shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <DocumentTextIcon className="w-5 h-5 text-primary-600" />
-                  <Dialog.Title className="text-base font-semibold text-gray-900">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <DocumentTextIcon className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                  <Dialog.Title className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                     Preview Surat
                     {nomorSurat && (
-                      <span className="ml-2 text-sm font-mono text-gray-400">{nomorSurat}</span>
+                      <span className="ml-2 text-xs sm:text-sm font-mono text-gray-400 hidden sm:inline">{nomorSurat}</span>
                     )}
                   </Dialog.Title>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {pdfUrl && (
                     <button
                       onClick={handleDownload}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                     >
                       <ArrowDownTrayIcon className="w-4 h-4" />
-                      Unduh PDF
+                      <span className="hidden sm:inline">Unduh PDF</span>
+                      <span className="sm:hidden">Unduh</span>
                     </button>
+                  )}
+                  {/* Tombol buka di tab baru — berguna di mobile */}
+                  {directUrl && (
+                    <a
+                      href={directUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                      <span className="hidden sm:inline">Buka di Tab Baru</span>
+                    </a>
                   )}
                   <button
                     onClick={handleClose}
@@ -160,11 +188,51 @@ export default function PDFPreviewModal({ isOpen, onClose, suratId, nomorSurat }
                 )}
 
                 {pdfUrl && !loading && (
-                  <iframe
-                    src={pdfUrl}
-                    className="w-full h-full border-0"
-                    title="Preview Surat PDF"
-                  />
+                  mobile ? (
+                    /* ── Mobile: iframe tidak support PDF, tampilkan opsi aksi ── */
+                    <div className="flex flex-col items-center justify-center h-full gap-5 px-8 text-center">
+                      <div className="w-20 h-20 rounded-2xl bg-primary-100 flex items-center justify-center">
+                        <DocumentTextIcon className="w-10 h-10 text-primary-600" />
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-gray-800 mb-1">File PDF Siap</p>
+                        <p className="text-sm text-gray-500">
+                          Browser mobile tidak mendukung tampilan PDF langsung.
+                          Gunakan salah satu opsi di bawah ini:
+                        </p>
+                      </div>
+                      <div className="w-full max-w-xs space-y-3">
+                        {directUrl && (
+                          <a
+                            href={directUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors"
+                          >
+                            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                            Buka di Browser
+                          </a>
+                        )}
+                        <button
+                          onClick={handleDownload}
+                          className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors"
+                        >
+                          <ArrowDownTrayIcon className="w-4 h-4" />
+                          Unduh PDF
+                        </button>
+                      </div>
+                      {nomorSurat && (
+                        <p className="text-xs text-gray-400 font-mono">{nomorSurat}</p>
+                      )}
+                    </div>
+                  ) : (
+                    /* ── Desktop: iframe normal ── */
+                    <iframe
+                      src={pdfUrl}
+                      className="w-full h-full border-0"
+                      title="Preview Surat PDF"
+                    />
+                  )
                 )}
               </div>
             </Dialog.Panel>

@@ -13,6 +13,7 @@ export default function ProfilOrganisasiPage() {
   const [form, setForm] = useState({
     tingkatanOrg: '', namaOrg: '', daerahOrg: '',
     alamat: '', telepon: '', email: '', website: '',
+    kodeKlasifikasi: '',
   })
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState(null)
@@ -26,13 +27,14 @@ export default function ProfilOrganisasiPage() {
   useEffect(() => {
     if (profil) {
       setForm({
-        tingkatanOrg: profil.tingkatanOrg || '',
-        namaOrg:      profil.namaOrg      || '',
-        daerahOrg:    profil.daerahOrg    || '',
-        alamat:       profil.alamat        || '',
-        telepon:      profil.telepon       || '',
-        email:        profil.email         || '',
-        website:      profil.website       || '',
+        tingkatanOrg:    profil.tingkatanOrg    || '',
+        namaOrg:         profil.namaOrg         || '',
+        daerahOrg:       profil.daerahOrg       || '',
+        alamat:          profil.alamat           || '',
+        telepon:         profil.telepon          || '',
+        email:           profil.email            || '',
+        website:         profil.website          || '',
+        kodeKlasifikasi: profil.kodeKlasifikasi  || 'PP.06',
       })
     }
   }, [profil])
@@ -83,7 +85,8 @@ export default function ProfilOrganisasiPage() {
   const singkatan = form.tingkatanOrg && form.namaOrg
     ? buatSingkatan(form.tingkatanOrg, form.namaOrg)
     : 'PC-FNU'
-  const previewNomor = `001/A/${singkatan}/V/${new Date().getFullYear()}`
+  const kode = form.kodeKlasifikasi || 'PP.06'
+  const previewNomor = `001/A/${singkatan}/${kode}/V/${new Date().getFullYear()}`
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -153,12 +156,23 @@ export default function ProfilOrganisasiPage() {
               onChange={e => setForm(p => ({ ...p, daerahOrg: e.target.value }))} />
           </div>
 
+          <div>
+            <label className="label">Kode Klasifikasi Surat</label>
+            <input type="text" className="input-field"
+              placeholder="contoh: PP.06"
+              value={form.kodeKlasifikasi}
+              onChange={e => setForm(p => ({ ...p, kodeKlasifikasi: e.target.value }))} />
+            <p className="text-xs text-gray-400 mt-1">
+              Kode ini ditambahkan sebelum bulan romawi pada nomor surat
+            </p>
+          </div>
+
           {/* Preview nomor surat */}
           <div className="bg-primary-50 rounded-lg p-3">
             <p className="text-xs text-gray-500 mb-1">Preview format nomor surat:</p>
             <p className="font-mono text-sm font-semibold text-primary-700">{previewNomor}</p>
             <p className="text-xs text-gray-400 mt-1">
-              Urutan / Jenis / <strong>{singkatan}</strong> / Bulan-Romawi / Tahun
+              Urutan / Jenis / <strong>{singkatan}</strong> / <strong>{kode}</strong> / Bulan-Romawi / Tahun
             </p>
           </div>
         </div>
