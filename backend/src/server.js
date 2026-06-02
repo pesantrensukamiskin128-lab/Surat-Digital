@@ -184,31 +184,6 @@ app.post('/api/setup/regenerate-qr', async (req, res) => {
   }
 });
 
-// ── ENDPOINT SEMENTARA: regenerate QR tanpa secret (hapus setelah dipakai) ──
-app.get('/api/setup/fix-qr-now', async (req, res) => {
-  try {
-    const prisma = require('./config/prisma');
-    const { generateQRCode } = require('./utils/qrcode');
-    const suratList = await prisma.suratKeluar.findMany({
-      where: { status: 'SELESAI', qrCodeToken: { not: null } },
-      select: { id: true, qrCodeToken: true },
-    });
-    let ok = 0, fail = 0;
-    for (const surat of suratList) {
-      try {
-        const qrPath = await generateQRCode(surat.qrCodeToken, surat.id);
-        await prisma.suratKeluar.update({ where: { id: surat.id }, data: { qrCodePath: qrPath } });
-        ok++;
-      } catch (e) {
-        fail++;
-      }
-    }
-    res.json({ success: true, message: `Selesai: ${ok} QR diperbarui, ${fail} gagal`, total: suratList.length });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
 // Serve frontend React (production)
 // Harus setelah semua route /api agar tidak tertimpa
 const publicDir = path.join(__dirname, '../public');
