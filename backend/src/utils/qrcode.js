@@ -32,40 +32,68 @@ function resolveLogoPath(logoPathFromDB) {
 }
 
 /**
- * Overlay logo di tengah QR code menggunakan Jimp.
- * Logo diberi padding putih agar QR tetap terbaca (error correction H).
+ * Overlay logo di tengah QR code dengan background lingkaran putih + border hijau.
  * @param {Buffer} qrBuffer   - Buffer PNG hasil QRCode
  * @param {string} logoPath   - Absolute path ke file logo
  * @param {number} qrSize     - Ukuran QR (px)
  * @returns {Promise<Buffer>} - Buffer PNG hasil composite
  */
 async function overlayLogo(qrBuffer, logoPath, qrSize) {
-  const [qrImg, logoImg] = await Promise.all([
+  const [qrImg, logoRaw] = await Promise.all([
     Jimp.read(qrBuffer),
     Jimp.read(logoPath),
   ]);
 
-  // Logo maksimal 22% dari ukuran QR (aman untuk error correction H)
-  const logoMaxPx = Math.floor(qrSize * 0.22);
-  logoImg.resize(logoMaxPx, Jimp.AUTO);
+  // Logo maksimal 20% dari ukuran QR (aman untuk error correction H)
+  const logoMaxPx = Math.floor(qrSize * 0.20);
+  logoRaw.resize(logoMaxPx, Jimp.AUTO);
 
-  const logoW = logoImg.getWidth();
-  const logoH = logoImg.getHeight();
+  const logoW = logoRaw.getWidth();
+  const logoH = logoRaw.getHeight();
 
-  // Padding putih di sekitar logo (4px setiap sisi)
-  const pad = 4;
-  const boxW = logoW + pad * 2;
-  const boxH = logoH + pad * 2;
+  // Radius lingkaran = setengah diagonal logo + padding
+  const pad    = Math.floor(qrSize * 0.03);   // ~3% QR size
+  const border = Math.max(2, Math.floor(qrSize * 0.008)); // tebal border ~0.8%
+  const radius = Math.floor(Math.sqrt(logoW * logoW + logoH * logoH) / 2) + pad;
+  const sz     = radius * 2; // ukuran canvas lingkaran
 
-  // Buat kotak putih sebagai background logo
-  const bg = new Jimp(boxW, boxH, 0xFFFFFFFF);
-  bg.composite(logoImg, pad, pad);
+  // ── Buat canvas lingkaran putih + border hijau ──
+  const circle = new Jimp(sz, sz, 0x00000000); // transparan
 
-  // Posisi tengah QR
-  const x = Math.floor((qrSize - boxW) / 2);
-  const y = Math.floor((qrSize - boxH) / 2);
+  const cx = sz / 2;
+  const cy = sz / 2;
 
-  qrImg.composite(bg, x, y);
+  circle.scan(0, 0, sz, sz, function (px, py, idx) {
+    const dx = px - cx;
+    const dy = py - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist <= radius - border) {
+      // Area putih (dalam lingkaran, di luar border)
+      this.bitmap.data[idx]     = 255; // R
+      this.bitmap.data[idx + 1] = 255; // G
+      this.bitmap.data[idx + 2] = 255; // B
+      this.bitmap.data[idx + 3] = 255; // A
+    } else if (dist <= radius) {
+      // Border hijau senada QR (#166534)
+      this.bitmap.data[idx]     = 22;  // R
+      this.bitmap.data[idx + 1] = 101; // G
+      this.bitmap.data[idx + 2] = 52;  // B
+      this.bitmap.data[idx + 3] = 255; // A
+    }
+    // else: di luar radius → tetap transparan
+  });
+
+  // ── Tempel logo di tengah lingkaran ──
+  const logoX = Math.floor((sz - logoW) / 2);
+  const logoY = Math.floor((sz - logoH) / 2);
+  circle.composite(logoRaw, logoX, logoY);
+
+  // ── Tempel lingkaran ke QR di posisi tengah ──
+  const qrX = Math.floor((qrSize - sz) / 2);
+  const qrY = Math.floor((qrSize - sz) / 2);
+  qrImg.composite(circle, qrX, qrY);
+
   return qrImg.getBufferAsync(Jimp.MIME_PNG);
 }
 
@@ -165,4 +193,4 @@ async function generateQRCodeDataURL(token) {
   return `data:image/png;base64,${finalBuffer.toString('base64')}`;
 }
 
-module.exports = { generateQRCode, generateQRCodeDataURL, resetLogoCache };
+module.exports = { generateQRCode, generateQRCodeDataURL, resetLogoCache, getFrontendUrl };

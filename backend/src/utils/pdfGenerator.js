@@ -2,7 +2,7 @@
 const PDFDocument = require('pdfkit');
 const path        = require('path');
 const fs2         = require('fs');
-const { generateQRCodeDataURL } = require('./qrcode');
+const { generateQRCodeDataURL, getFrontendUrl } = require('./qrcode');
 
 // ── FONT PATHS ────────────────────────────────────────────────────────────[...]
 const FONTS_DIR  = path.join(__dirname, 'fonts');
@@ -1008,6 +1008,9 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
   if (qrDataUrl) {
     try {
       doc.image(qrDataUrl, blokX, y, { width: qrSz, height: qrSz });
+      // Embed hyperlink agar QR bisa diklik di PDF reader
+      const verifikasiUrl = `${getFrontendUrl()}/verifikasi/${surat.qrCodeToken}`;
+      doc.link(blokX, y, qrSz, qrSz, verifikasiUrl);
     } catch (_) {}
     y += qrSz + 4;
   } else {
@@ -1041,7 +1044,12 @@ async function drawFooter(doc, surat, qrDataUrl, pageNum, totalPages) {
 
   // QR kiri bawah
   if (qrDataUrl) {
-    try { doc.image(qrDataUrl, ML, footerY, { width: qrSz, height: qrSz }); } catch (_) {}
+    try {
+      doc.image(qrDataUrl, ML, footerY, { width: qrSz, height: qrSz });
+      // Embed hyperlink agar QR bisa diklik di PDF reader
+      const verifikasiUrl = `${getFrontendUrl()}/verifikasi/${surat.qrCodeToken}`;
+      doc.link(ML, footerY, qrSz, qrSz, verifikasiUrl);
+    } catch (_) {}
   }
 
   // Teks verifikasi di samping QR
