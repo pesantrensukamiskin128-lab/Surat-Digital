@@ -1,4 +1,6 @@
 const prisma = require('../config/prisma');
+const { generateSuratPDF } = require('../utils/pdfGenerator');
+const fs = require('fs');
 
 // Verifikasi surat berdasarkan token QR Code (publik, tidak perlu auth)
 const verifySurat = async (req, res) => {
@@ -79,4 +81,45 @@ const verifySurat = async (req, res) => {
   }
 };
 
-module.exports = { verifySurat };
+// Preview PDF publik berdasarkan token QR (tanpa auth)
+const previewPDFPublik = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const surat = await prisma.suratKeluar.findUnique({
+      where: { qrCodeToken: token },
+      include: {
+        pembuat:   { select: { namaLengkap: true, jabatan: true } },
+        tataUsaha: { select: { namaLengkap: true, jabatan: true } },
+        kepala:    { select: { namaLengkap: true, jabatan: true } },
+        penerimaInternal: {
+          include: { user: { select: { namaLengkap: true, jabatan: true } } }
+        },
+      },
+    });
+
+    if (!surat || surat.status !== 'SELESAI') {
+      return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan' });
+    }
+
+    const organisasi = await prisma.organisasiProfil.findFirst();
+    const { filepath } = await generateSuratPDF(surat, organisasi || {});
+
+    const safeNomor = (surat.nomorSurat || surat.id).replace(/\//g, '-');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Surat-${safeNomor}.pdf"`);
+
+    const stream = fs.createReadStream(filepath);
+    stream.pipe(res);
+    stream.on('end', () => { if (fs.existsSync(filepath)) fs.unlinkSync(filepath); });
+    stream.on('error', () => {
+      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      if (!res.headersSent) res.status(500).json({ success: false, message: 'Gagal membaca PDF' });
+    });
+  } catch (error) {
+    console.error('Preview PDF publik error:', error);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan saat generate PDF' });
+  }
+};
+
+module.exports = { verifySurat, previewPDFPublik };

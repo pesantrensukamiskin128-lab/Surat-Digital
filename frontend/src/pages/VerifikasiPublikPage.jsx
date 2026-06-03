@@ -3,11 +3,21 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   CheckBadgeIcon, XCircleIcon, ShieldCheckIcon,
-  DocumentTextIcon, CalendarIcon, UserIcon, BuildingOfficeIcon
+  DocumentTextIcon, CalendarIcon, UserIcon, BuildingOfficeIcon,
+  ArrowTopRightOnSquareIcon, ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline'
 import { verifikasiAPI, getUploadUrl } from '../services/api'
 import { formatDate, formatDateTime } from '../utils/helpers'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+
+// Deteksi mobile
+const isMobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+
+// Bangun URL publik PDF berdasarkan token
+function getPdfUrl(token) {
+  const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '')
+  return `${base}/api/verifikasi/${token}/pdf`
+}
 
 export default function VerifikasiPublikPage() {
   const { token } = useParams()
@@ -17,6 +27,9 @@ export default function VerifikasiPublikPage() {
     queryFn: () => verifikasiAPI.verify(token).then(r => r.data),
     retry: false,
   })
+
+  const pdfUrl = token ? getPdfUrl(token) : null
+  const mobile = isMobile()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-emerald-700 flex items-center justify-center p-4">
@@ -109,9 +122,48 @@ export default function VerifikasiPublikPage() {
                 ))}
               </div>
 
+              {/* Tombol Lihat Dokumen */}
+              {pdfUrl && (
+                <div className="space-y-2">
+                  {mobile ? (
+                    /* Mobile: buka di tab baru + unduh */
+                    <div className="space-y-2">
+                      <a
+                        href={pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors"
+                      >
+                        <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                        Lihat Dokumen
+                      </a>
+                      <a
+                        href={pdfUrl}
+                        download
+                        className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                        Unduh PDF
+                      </a>
+                    </div>
+                  ) : (
+                    /* Desktop: buka di tab baru */
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors"
+                    >
+                      <DocumentTextIcon className="w-4 h-4" />
+                      Lihat Dokumen
+                    </a>
+                  )}
+                </div>
+              )}
+
               {/* Penandatangan */}
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Penandatangan</h3>
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Pemeriksa Dan Penandatangan</h3>
                 {data.data.penandatangan?.tataUsaha && (
                   <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
                     <CheckBadgeIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
