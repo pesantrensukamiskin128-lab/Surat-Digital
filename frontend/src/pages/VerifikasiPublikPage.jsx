@@ -82,13 +82,8 @@ export default function VerifikasiPublikPage() {
                 )}
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Diterbitkan oleh</p>
-                  {data.data.organisasi?.tingkatan && (
-                    <p className="font-semibold text-primary-500">{data.data.organisasi.tingkatan}</p>
-                  )}
                   <p className="font-semibold text-primary-800">{data.data.organisasi?.nama}</p>
-                  {data.data.organisasi?.daerah && (
-                    <p className="font-semibold text-primary-500">{data.data.organisasi.daerah}</p>
-                  )}
+                  <p className="font-semibold text-primary-800">{data.data.organisasi.daerah}</p>
                   {data.data.organisasi?.alamat && (
                     <p className="text-xs text-gray-500 mt-0.5">{data.data.organisasi.alamat}</p>
                   )}
@@ -101,7 +96,7 @@ export default function VerifikasiPublikPage() {
                 {[
                   { icon: DocumentTextIcon, label: 'Nomor Surat', value: data.data.nomorSurat },
                   { icon: DocumentTextIcon, label: 'Perihal', value: data.data.perihal },
-                  { icon: CalendarIcon, label: 'Tanggal', value: `${formatDate(data.data.tanggalMasehi)} / ${data.data.tanggalHijriyah}` },
+                  { icon: CalendarIcon, label: 'Tanggal', value: `${formatDate(data.data.tanggalMasehi)} M / ${data.data.tanggalHijriyah}` },
                   { icon: UserIcon, label: 'Dibuat oleh', value: data.data.dibuatOleh },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-3">
@@ -124,7 +119,7 @@ export default function VerifikasiPublikPage() {
                       <p className="text-sm font-semibold text-gray-800">{data.data.penandatangan.tataUsaha.nama}</p>
                       <p className="text-xs text-gray-500">{data.data.penandatangan.tataUsaha.jabatan}</p>
                       <p className="text-xs text-blue-600 mt-0.5">
-                        ✓ Paraf: {formatDateTime(data.data.penandatangan.tataUsaha.tanggalParaf)}
+                        ✓ Diperiksa: {formatDateTime(data.data.penandatangan.tataUsaha.tanggalParaf)}
                       </p>
                     </div>
                   </div>

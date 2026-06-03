@@ -169,7 +169,7 @@ export default function SuratKeluarDetailPage() {
             <dl className="space-y-3">
               {[
                 { label: 'Perihal', value: surat.perihal },
-                { label: 'Tanggal', value: `${formatDate(surat.tanggalMasehi)} / ${surat.tanggalHijriyah}` },
+                { label: 'Tanggal', value: `${formatDate(surat.tanggalMasehi)} M / ${surat.tanggalHijriyah}` },
                 { label: 'Dibuat oleh', value: surat.pembuat?.namaLengkap },
                 { label: 'Penerima Eksternal', value: surat.penerimaEksternal || '—' },
                 surat.penerimaInternal?.length > 0 && {

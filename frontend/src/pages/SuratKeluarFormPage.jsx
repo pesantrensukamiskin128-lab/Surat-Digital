@@ -235,7 +235,7 @@ export default function SuratKeluarFormPage() {
             </div>
             <textarea
               className="input-field min-h-[80px] resize-none"
-              placeholder={"Pengurus PC Fatayat NU Kota Bandung\ndi\nTempat"}
+              placeholder={"Guru dan Staf MA YPP Sukamiskin"}
               value={form.tujuanSurat}
               onChange={e => setForm(p => ({ ...p, tujuanSurat: e.target.value }))}
             />

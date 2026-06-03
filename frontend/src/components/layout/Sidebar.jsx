@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <p className="font-bold text-primary-900 text-sm leading-tight truncate">
             SIRAMA
           </p>
-          <p className="text-xs text-gray-400 truncate">Sistem Informasi Risalah & Administrasi</p>
+          <p className="text-xs text-gray-400 truncate">MA YPP Sukamiskin</p>
         </div>
         {/* Close button mobile */}
         <button
