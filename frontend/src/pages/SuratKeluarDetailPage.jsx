@@ -256,12 +256,18 @@ export default function SuratKeluarDetailPage() {
           {surat.status === 'SELESAI' && surat.qrCodeToken && (
             <div className="card card-body text-center">
               <h2 className="section-title mb-3">Verifikasi QR Code</h2>
-              <img
-                src={getUploadUrl(surat.qrCodePath)}
-                alt="QR Code Verifikasi"
-                className="w-32 h-32 mx-auto rounded-lg border border-gray-100"
-              />
-              <p className="text-xs text-gray-400 mt-2">Scan untuk verifikasi keaslian dokumen</p>
+              <Link
+                to={`/verifikasi/${surat.qrCodeToken}`}
+                target="_blank"
+                title="Klik untuk membuka halaman verifikasi"
+              >
+                <img
+                  src={getUploadUrl(surat.qrCodePath)}
+                  alt="QR Code Verifikasi"
+                  className="w-32 h-32 mx-auto rounded-lg border border-gray-100 hover:opacity-80 hover:scale-105 transition-all duration-200 cursor-pointer"
+                />
+              </Link>
+              <p className="text-xs text-gray-400 mt-2">Scan atau klik untuk verifikasi keaslian dokumen</p>
               <Link
                 to={`/verifikasi/${surat.qrCodeToken}`}
                 target="_blank"

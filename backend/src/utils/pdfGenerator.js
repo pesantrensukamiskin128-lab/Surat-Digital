@@ -1039,8 +1039,8 @@ async function drawFooter(doc, surat, qrDataUrl, pageNum, totalPages) {
   const qrSz    = 55;
   const footerY = PH - 75;
   const verifikasiTxt =
-    'Dokumen ini ditandatangani dan distempel secara elektronik melalui Aplikasi SIRAMA - Sistem Informasi Risalah & Administrasi Madrasah ' +
-    ', untuk verifikasi surat scan QRCode.';
+    'Dokumen ini ditandatangani dan distempel secara elektronik melalui Aplikasi Sistem Informasi Risalah & Administrasi Madrasah (SIRAMA) MA YPP Sukamiskin' +
+    ', untuk verifikasi surat scan atau klik QRCode.';
 
   // QR kiri bawah
   if (qrDataUrl) {
