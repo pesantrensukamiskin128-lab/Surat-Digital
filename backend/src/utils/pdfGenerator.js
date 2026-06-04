@@ -1022,6 +1022,12 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
     doc.font(F_BOLD).fontSize(FS_ISI).fillColor('#000000')
        .text(kepala.namaLengkap || '', blokX, y, { width: blokW, align: 'left', underline: true });
     y = doc.y + 2;
+    // NUPTK di bawah nama (jika ada)
+    if (kepala.nuptk) {
+      doc.font(F_REG).fontSize(FS_ISI - 0.5).fillColor('#000000')
+         .text(`NUPTK: ${kepala.nuptk}`, blokX, y, { width: blokW, align: 'left' });
+      y = doc.y + 2;
+    }
   }
 
   return y + 6;

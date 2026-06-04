@@ -66,6 +66,7 @@ app.use('/api/rekap', require('./routes/rekap.routes'));
 app.use('/api/push', require('./routes/push.routes'));
 app.use('/api/notifikasi', require('./routes/notifikasi.routes'));
 app.use('/api/agenda', require('./routes/agenda.routes'));
+app.use('/api/template-surat', require('./routes/template.routes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

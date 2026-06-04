@@ -13,7 +13,7 @@ import Modal from '../components/ui/Modal'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const ROLES = ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU']
-const defaultForm = { email: '', password: '', namaLengkap: '', jabatan: '', nomorHp: '', role: 'GURU' }
+const defaultForm = { email: '', password: '', namaLengkap: '', jabatan: '', nomorHp: '', nuptk: '', role: 'GURU' }
 
 export default function ManajemenUserPage() {
   const queryClient = useQueryClient()
@@ -69,7 +69,7 @@ export default function ManajemenUserPage() {
   const openCreate = () => { setForm(defaultForm); setModal('create') }
   const openEdit = (user) => {
     setSelectedUser(user)
-    setForm({ namaLengkap: user.namaLengkap, jabatan: user.jabatan || '', nomorHp: user.nomorHp || '', role: user.role, isActive: user.isActive })
+    setForm({ namaLengkap: user.namaLengkap, jabatan: user.jabatan || '', nomorHp: user.nomorHp || '', nuptk: user.nuptk || '', role: user.role, isActive: user.isActive })
     setModal('edit')
   }
   const openReset = (user) => { setSelectedUser(user); setNewPassword(''); setModal('reset') }
@@ -199,7 +199,7 @@ export default function ManajemenUserPage() {
                   <th>Nama Lengkap</th>
                   <th>Email</th>
                   <th>Jabatan</th>
-                  <th>No. Handphone</th>
+                  <th>NUPTK</th>
                   <th>Role</th>
                   <th>Status</th>
                   <th className="text-right">Aksi</th>
@@ -218,7 +218,7 @@ export default function ManajemenUserPage() {
                     </td>
                     <td className="text-gray-500 text-xs">{u.email}</td>
                     <td className="text-gray-600 text-sm">{u.jabatan || '—'}</td>
-                    <td className="text-gray-600 text-sm">{u.nomorHp || '—'}</td>
+                    <td className="text-gray-600 text-sm font-mono">{u.nuptk || '—'}</td>
                     <td><span className={`badge ${getRoleColor(u.role)}`}>{getRoleLabel(u.role)}</span></td>
                     <td>
                       <span className={`badge ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -274,6 +274,13 @@ export default function ManajemenUserPage() {
             <label className="label">No. Handphone</label>
             <input type="tel" className="input-field" placeholder="Contoh: 08123456789"
               value={form.nomorHp} onChange={e => setForm(p => ({ ...p, nomorHp: e.target.value }))} />
+          </div>
+          <div>
+            <label className="label">NUPTK</label>
+            <input type="text" className="input-field font-mono" placeholder="16 digit angka (opsional)"
+              maxLength={20}
+              value={form.nuptk} onChange={e => setForm(p => ({ ...p, nuptk: e.target.value.replace(/\D/g, '') }))} />
+            <p className="text-xs text-gray-400 mt-1">Nomor Unik Pendidik dan Tenaga Kependidikan</p>
           </div>
           <div>
             <label className="label">Role <span className="text-red-500">*</span></label>

@@ -10,8 +10,8 @@ const fs = require('fs');
 
 const suratInclude = {
   pembuat:   { select: { id: true, namaLengkap: true, jabatan: true, role: true } },
-  tataUsaha: { select: { id: true, namaLengkap: true, jabatan: true } },
-  kepala:    { select: { id: true, namaLengkap: true, jabatan: true } },
+  tataUsaha: { select: { id: true, namaLengkap: true, jabatan: true, nuptk: true } },
+  kepala:    { select: { id: true, namaLengkap: true, jabatan: true, nuptk: true } },
   penerimaInternal: {
     include: { user: { select: { id: true, namaLengkap: true, jabatan: true, role: true } } }
   },

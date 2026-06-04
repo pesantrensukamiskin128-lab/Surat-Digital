@@ -5,6 +5,7 @@ import {
   UsersIcon, BuildingOfficeIcon, ArrowRightOnRectangleIcon,
   DocumentArrowDownIcon, XMarkIcon, ClipboardDocumentListIcon,
   ChartBarIcon, CalendarDaysIcon, QrCodeIcon, ClockIcon,
+  DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline'
 import useAuthStore from '../../store/authStore'
 import { useQuery } from '@tanstack/react-query'
@@ -13,6 +14,7 @@ import { organisasiAPI, getUploadUrl } from '../../services/api'
 const navItems = [
   { to: '/dashboard', icon: HomeIcon, label: 'Dashboard', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
   { to: '/surat-keluar', icon: DocumentTextIcon, label: 'Surat Keluar', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA'] },
+  { to: '/template-surat', icon: DocumentDuplicateIcon, label: 'Template Surat', roles: ['ADMIN'] },
   { to: '/surat-masuk', icon: InboxIcon, label: 'Surat Masuk', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
   { to: '/disposisi', icon: ClipboardDocumentListIcon, label: 'Disposisi', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },
   { to: '/agenda', icon: CalendarDaysIcon, label: 'Agenda Kegiatan', roles: ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'] },

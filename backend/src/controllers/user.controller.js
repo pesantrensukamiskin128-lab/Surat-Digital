@@ -8,6 +8,7 @@ const USER_SELECT = {
   namaLengkap: true,
   jabatan: true,
   nomorHp: true,
+  nuptk: true,
   role: true,
   isActive: true,
   createdAt: true,
@@ -43,7 +44,7 @@ const getUserById = async (req, res) => {
 // Buat user baru (Admin only)
 const createUser = async (req, res) => {
   try {
-    const { email, password, namaLengkap, jabatan, nomorHp, role } = req.body;
+    const { email, password, namaLengkap, jabatan, nomorHp, nuptk, role } = req.body;
 
     if (!email || !password || !namaLengkap || !role) {
       return res.status(400).json({ success: false, message: 'Email, password, nama lengkap, dan role diperlukan' });
@@ -71,6 +72,7 @@ const createUser = async (req, res) => {
         namaLengkap: namaLengkap.trim(),
         jabatan: jabatan?.trim() || '',
         nomorHp: nomorHp?.trim() || '',
+        nuptk: nuptk?.trim() || null,
         role,
       },
       select: USER_SELECT,
@@ -86,7 +88,7 @@ const createUser = async (req, res) => {
 // Update user (Admin only)
 const updateUser = async (req, res) => {
   try {
-    const { namaLengkap, jabatan, nomorHp, role, isActive } = req.body;
+    const { namaLengkap, jabatan, nomorHp, nuptk, role, isActive } = req.body;
     const { id } = req.params;
 
     if (id === req.user.id && role && role !== req.user.role) {
@@ -97,6 +99,7 @@ const updateUser = async (req, res) => {
     if (namaLengkap !== undefined) updateData.namaLengkap = namaLengkap.trim();
     if (jabatan !== undefined) updateData.jabatan = jabatan.trim();
     if (nomorHp !== undefined) updateData.nomorHp = nomorHp.trim();
+    if (nuptk !== undefined) updateData.nuptk = nuptk?.trim() || null;
     if (role !== undefined) {
       const validRoles = ['ADMIN', 'TATA_USAHA', 'KEPALA', 'GURU'];
       if (!validRoles.includes(role)) {
@@ -171,7 +174,7 @@ const getUsersByRole = async (req, res) => {
     }
     const users = await prisma.user.findMany({
       where,
-      select: { id: true, namaLengkap: true, jabatan: true, nomorHp: true, role: true },
+      select: { id: true, namaLengkap: true, jabatan: true, nomorHp: true, nuptk: true, role: true },
       orderBy: { namaLengkap: 'asc' }
     });
     res.json({ success: true, data: users });
@@ -184,18 +187,18 @@ const getUsersByRole = async (req, res) => {
 const downloadTemplate = async (req, res) => {
   try {
     const headers = [
-      ['namaLengkap', 'email', 'password', 'jabatan', 'nomorHp', 'role'],
+      ['namaLengkap', 'email', 'password', 'jabatan', 'nomorHp', 'nuptk', 'role'],
     ];
     const contoh = [
-      ['Siti Aminah', 'siti@contoh.com', 'password123', 'Kepala Tata Usaha', '08123456789', 'TATA_USAHA'],
-      ['Budi Santoso', 'budi@contoh.com', 'password123', 'Guru Kelas', '08987654321', 'GURU'],
+      ['Siti Aminah', 'siti@contoh.com', 'password123', 'Kepala Tata Usaha', '08123456789', '1234567890123456', 'TATA_USAHA'],
+      ['Budi Santoso', 'budi@contoh.com', 'password123', 'Guru Kelas', '08987654321', '', 'GURU'],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet([...headers, ...contoh]);
 
     // Lebar kolom
     ws['!cols'] = [
-      { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 15 },
+      { wch: 25 }, { wch: 30 }, { wch: 15 }, { wch: 25 }, { wch: 18 }, { wch: 20 }, { wch: 15 },
     ];
 
     const wb = XLSX.utils.book_new();
@@ -211,10 +214,11 @@ const downloadTemplate = async (req, res) => {
       ['password', 'Password awal (min. 6 karakter)', 'Ya', 'password123'],
       ['jabatan', 'Jabatan dalam organisasi', 'Tidak', 'Ketua Bidang'],
       ['nomorHp', 'Nomor handphone', 'Tidak', '08123456789'],
+      ['nuptk', 'Nomor Unik Pendidik dan Tenaga Kependidikan (16 digit)', 'Tidak', '1234567890123456'],
       ['role', 'Role: ADMIN / TATA_USAHA / KEPALA / GURU', 'Ya', 'GURU'],
     ];
     const wsPetunjuk = XLSX.utils.aoa_to_sheet(petunjukData);
-    wsPetunjuk['!cols'] = [{ wch: 18 }, { wch: 45 }, { wch: 10 }, { wch: 25 }];
+    wsPetunjuk['!cols'] = [{ wch: 18 }, { wch: 55 }, { wch: 10 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, wsPetunjuk, 'Petunjuk');
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
@@ -244,13 +248,14 @@ const exportUsers = async (req, res) => {
       Email: u.email,
       Jabatan: u.jabatan || '',
       'No. Handphone': u.nomorHp || '',
+      NUPTK: u.nuptk || '',
       Role: ROLE_LABEL[u.role] || u.role,
       Status: u.isActive ? 'Aktif' : 'Nonaktif',
     }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
     ws['!cols'] = [
-      { wch: 5 }, { wch: 28 }, { wch: 30 }, { wch: 25 }, { wch: 18 }, { wch: 14 }, { wch: 10 },
+      { wch: 5 }, { wch: 28 }, { wch: 30 }, { wch: 25 }, { wch: 18 }, { wch: 20 }, { wch: 14 }, { wch: 10 },
     ];
 
     const wb = XLSX.utils.book_new();
@@ -294,6 +299,7 @@ const importUsers = async (req, res) => {
       const password = String(row.password || '').trim();
       const jabatan = String(row.jabatan || '').trim();
       const nomorHp = String(row.nomorHp || '').trim();
+      const nuptk = String(row.nuptk || '').trim() || null;
       const role = String(row.role || '').trim().toUpperCase();
 
       // Validasi
@@ -323,7 +329,7 @@ const importUsers = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 12);
         await prisma.user.create({
-          data: { email, password: hashedPassword, namaLengkap, jabatan, nomorHp, role },
+          data: { email, password: hashedPassword, namaLengkap, jabatan, nomorHp, nuptk, role },
         });
         results.berhasil++;
       } catch (err) {

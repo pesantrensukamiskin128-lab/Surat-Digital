@@ -69,6 +69,21 @@ enum MetodeKehadiran {
   FORM
 }
 
+model TemplateSurat {
+  id           String     @id @default(uuid()) @db.VarChar(36)
+  nama         String
+  deskripsi    String?
+  jenisSurat   JenisSurat @default(A)
+  perihal      String?
+  tujuanSurat  String?    @db.Text
+  lampiran     String?
+  isiSurat     String     @db.Text
+  lampiranIsi  String?    @db.Text
+  tempatTerbit String     @default("Bandung")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
 model OrganisasiProfil {
   id              String   @id @default(uuid()) @db.VarChar(36)
   tingkatanOrg    String   @default("Pimpinan Cabang")
@@ -90,6 +105,7 @@ model User {
   namaLengkap   String
   jabatan       String    @default("")
   nomorHp       String    @default("")
+  nuptk         String?   @db.VarChar(20)
   role          Role      @default(GURU)
   isActive      Boolean   @default(true)
   fotoProfil    String?

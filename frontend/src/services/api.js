@@ -141,6 +141,15 @@ export const notifikasiAPI = {
   hapusDibaca: () => api.delete('/notifikasi/hapus-dibaca'),
 }
 
+// Template Surat
+export const templateAPI = {
+  getAll:   ()        => api.get('/template-surat'),
+  getById:  (id)      => api.get(`/template-surat/${id}`),
+  create:   (data)    => api.post('/template-surat', data),
+  update:   (id, data) => api.put(`/template-surat/${id}`, data),
+  delete:   (id)      => api.delete(`/template-surat/${id}`),
+}
+
 // Agenda
 export const agendaAPI = {
   getAll: (params) => api.get('/agenda', { params }),

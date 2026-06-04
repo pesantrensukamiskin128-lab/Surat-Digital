@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeftIcon, DocumentCheckIcon, InformationCircleIcon, EyeIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, DocumentCheckIcon, InformationCircleIcon, EyeIcon, DocumentDuplicateIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
-import { suratKeluarAPI, userAPI } from '../services/api'
+import { suratKeluarAPI, userAPI, templateAPI } from '../services/api'
 import RichTextEditor from '../components/editor/RichTextEditor'
 import PDFPreviewModal from '../components/ui/PDFPreviewModal'
 import { JENIS_SURAT_OPTIONS } from '../utils/helpers'
@@ -64,6 +64,8 @@ export default function SuratKeluarFormPage() {
 
   const [form, setForm] = useState(defaultForm)
   const [previewModal, setPreviewModal] = useState(false)
+  const [templateModal, setTemplateModal] = useState(false)
+  const [templateSearch, setTemplateSearch] = useState('')
 
   // Load existing surat for edit
   const { data: existingSurat } = useQuery({
@@ -75,6 +77,11 @@ export default function SuratKeluarFormPage() {
   const { data: tataUsahaList } = useQuery({
     queryKey: ['users-tata-usaha'],
     queryFn: () => userAPI.getByRole('TATA_USAHA').then(r => r.data.data),
+  })
+
+  const { data: templates } = useQuery({
+    queryKey: ['template-surat'],
+    queryFn: () => templateAPI.getAll().then(r => r.data.data),
   })
   const { data: kepalaList } = useQuery({
     queryKey: ['users-kepala'],
@@ -142,6 +149,27 @@ export default function SuratKeluarFormPage() {
 
   const set = (key) => (val) => setForm(p => ({ ...p, [key]: val }))
 
+  const applyTemplate = (t) => {
+    setForm(p => ({
+      ...p,
+      jenisSurat:   t.jenisSurat   || p.jenisSurat,
+      perihal:      t.perihal      || p.perihal,
+      tujuanSurat:  t.tujuanSurat  || p.tujuanSurat,
+      lampiran:     t.lampiran     || p.lampiran,
+      isiSurat:     t.isiSurat     || p.isiSurat,
+      lampiranIsi:  t.lampiranIsi  || p.lampiranIsi,
+      tempatTerbit: t.tempatTerbit || p.tempatTerbit,
+    }))
+    setTemplateModal(false)
+    setTemplateSearch('')
+    toast.success(`Template "${t.nama}" diterapkan`)
+  }
+
+  const filteredTemplates = (templates || []).filter(t =>
+    t.nama.toLowerCase().includes(templateSearch.toLowerCase()) ||
+    t.perihal?.toLowerCase().includes(templateSearch.toLowerCase())
+  )
+
   return (
     <div className="space-y-5 max-w-4xl">
       {/* Header */}
@@ -153,8 +181,17 @@ export default function SuratKeluarFormPage() {
           <h1 className="page-title">{isEdit ? 'Edit Surat Keluar' : 'Buat Surat Keluar'}</h1>
           <p className="text-sm text-gray-500">Isi formulir surat keluar di bawah ini</p>
         </div>
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={() => setTemplateModal(true)}
+            className="btn-secondary"
+          >
+            <DocumentDuplicateIcon className="w-4 h-4" />
+            Pakai Template
+          </button>
+        )}
       </div>
-
       <div className="grid lg:grid-cols-3 gap-5">
         {/* ── Kolom Utama ── */}
         <div className="lg:col-span-2 space-y-5">
@@ -379,6 +416,79 @@ export default function SuratKeluarFormPage() {
           suratId={id}
           nomorSurat={existingSurat?.nomorSurat}
         />
+      )}
+
+      {/* Modal Pilih Template */}
+      {templateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setTemplateModal(false)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Pilih Template</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Form akan diisi otomatis sesuai template</p>
+              </div>
+              <button onClick={() => setTemplateModal(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-4 py-3 border-b border-gray-50">
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Cari template..."
+                value={templateSearch}
+                onChange={e => setTemplateSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {filteredTemplates.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <DocumentDuplicateIcon className="w-10 h-10 mx-auto mb-2 text-gray-200" />
+                  <p className="text-sm">
+                    {templateSearch ? 'Template tidak ditemukan' : 'Belum ada template tersedia'}
+                  </p>
+                </div>
+              ) : (
+                filteredTemplates.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => applyTemplate(t)}
+                    className="w-full text-left p-3 rounded-xl border border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 px-1.5 py-0.5 rounded text-xs font-bold bg-primary-100 text-primary-700 flex-shrink-0">
+                        {t.jenisSurat}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 group-hover:text-primary-700">
+                          {t.nama}
+                        </p>
+                        {t.deskripsi && (
+                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{t.deskripsi}</p>
+                        )}
+                        {t.perihal && (
+                          <p className="text-xs text-gray-500 mt-0.5 italic line-clamp-1">
+                            Perihal: {t.perihal}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   )

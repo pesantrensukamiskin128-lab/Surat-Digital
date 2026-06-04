@@ -27,9 +27,9 @@ import ScanQRPage from './pages/ScanQRPage'
 import HadirVerifikasiPage from './pages/HadirVerifikasiPage'
 import HadirPublikPage from './pages/HadirPublikPage'
 import RiwayatPresensiPage from './pages/RiwayatPresensiPage'
+import TemplateSuratPage from './pages/TemplateSuratPage'
 import NotFoundPage from './pages/NotFoundPage'
 
-// Protected Route
 const ProtectedRoute = ({ children, roles }) => {
   const { isAuthenticated, user } = useAuthStore()
   
@@ -140,11 +140,21 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route
+          <Route 
             path="rekap"
             element={
               <ProtectedRoute roles={['ADMIN']}>
                 <RekapPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Template Surat - Admin only */}
+          <Route
+            path="template-surat"
+            element={
+              <ProtectedRoute roles={['ADMIN']}>
+                <TemplateSuratPage />
               </ProtectedRoute>
             }
           />

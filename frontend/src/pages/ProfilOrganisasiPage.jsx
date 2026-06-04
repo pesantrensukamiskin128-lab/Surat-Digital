@@ -40,7 +40,7 @@ export default function ProfilOrganisasiPage() {
   const updateMutation = useMutation({
     mutationFn: (fd) => organisasiAPI.updateProfil(fd),
     onSuccess: () => {
-      toast.success('Profil organisasi berhasil diperbarui')
+      toast.success('Profil lembaga berhasil diperbarui')
       queryClient.invalidateQueries(['organisasi'])
       setLogoFile(null)
       setLogoPreview(null)
@@ -69,7 +69,7 @@ export default function ProfilOrganisasiPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.namaOrg.trim()) { toast.error('Nama organisasi harus diisi'); return }
+    if (!form.namaOrg.trim()) { toast.error('Nama lembaga harus diisi'); return }
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => fd.append(k, v))
     if (logoFile) fd.append('logo', logoFile)
@@ -88,14 +88,14 @@ export default function ProfilOrganisasiPage() {
   return (
     <div className="space-y-5 max-w-2xl">
       <div>
-        <h1 className="page-title">Profil Organisasi</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Kelola informasi organisasi dan kop surat</p>
+        <h1 className="page-title">Profil Lembaga</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Kelola informasi lembaga dan kop surat</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Logo */}
         <div className="card card-body">
-          <h2 className="section-title mb-4">Logo Organisasi</h2>
+          <h2 className="section-title mb-4">Logo Lembaga</h2>
           <div className="flex items-start gap-6">
             <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 flex-shrink-0">
               {currentLogo
@@ -122,13 +122,13 @@ export default function ProfilOrganisasiPage() {
 
         {/* Identitas Organisasi */}
         <div className="card card-body space-y-4">
-          <h2 className="section-title">Identitas Organisasi</h2>
+          <h2 className="section-title">Identitas Lembaga</h2>
           <p className="text-xs text-gray-400 -mt-2">
             Data ini digunakan untuk kop surat dan nomor surat otomatis
           </p>
 
           <div>
-            <label className="label">Tingkatan Organisasi <span className="text-red-500">*</span></label>
+            <label className="label">Nama Yayasan<span className="text-red-500">*</span></label>
             <input type="text" className="input-field"
               placeholder="contoh: Pimpinan Cabang"
               value={form.tingkatanOrg}
@@ -137,7 +137,7 @@ export default function ProfilOrganisasiPage() {
           </div>
 
           <div>
-            <label className="label">Nama Organisasi <span className="text-red-500">*</span></label>
+            <label className="label">Nama Lembaga <span className="text-red-500">*</span></label>
             <input type="text" className="input-field"
               placeholder="contoh: Fatayat Nahdlatul Ulama"
               value={form.namaOrg}
@@ -146,7 +146,7 @@ export default function ProfilOrganisasiPage() {
           </div>
 
           <div>
-            <label className="label">Daerah Organisasi</label>
+            <label className="label">Daerah Lembaga</label>
             <input type="text" className="input-field"
               placeholder="contoh: Kota Bandung"
               value={form.daerahOrg}
