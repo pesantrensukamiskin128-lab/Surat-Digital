@@ -471,7 +471,7 @@ function estimateBlockHeight(doc, block) {
     const allRows = headers.length ? [headers, ...rows] : rows;
     if (!allRows.length) return 0;
     const numCols = Math.max(...allRows.map(r => r.length));
-    const PADX = 4, PADY = 3;
+    const PADX = 4, PADY = 1;
 
     // Hitung lebar kolom berdasarkan lebar teks aktual
     try { doc.font(F_REG).fontSize(FS_ISI); } catch (_) {}
@@ -575,7 +575,7 @@ function renderTable(doc, table, x, startY) {
   if (!allRows.length) return startY;
   const numCols = Math.max(...allRows.map(r => r.length));
   if (!numCols) return startY;
-  const PADX = 4, PADY = 3;
+  const PADX = 4, PADY = 1;
 
   // ── Hitung lebar kolom berdasarkan lebar teks aktual ──────────────────────
   // Set font dulu sebelum mengukur agar widthOfString akurat
