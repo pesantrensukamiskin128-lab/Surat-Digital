@@ -471,7 +471,7 @@ function estimateBlockHeight(doc, block) {
     const allRows = headers.length ? [headers, ...rows] : rows;
     if (!allRows.length) return 0;
     const numCols = Math.max(...allRows.map(r => r.length));
-    const PADX = 4, PADY = 1;
+    const PADX = 4, PADY = 2;
 
     // Hitung lebar kolom berdasarkan lebar teks aktual
     try { doc.font(F_REG).fontSize(FS_ISI); } catch (_) {}
@@ -575,7 +575,7 @@ function renderTable(doc, table, x, startY) {
   if (!allRows.length) return startY;
   const numCols = Math.max(...allRows.map(r => r.length));
   if (!numCols) return startY;
-  const PADX = 4, PADY = 1;
+  const PADX = 4, PADY = 2;
 
   // ── Hitung lebar kolom berdasarkan lebar teks aktual ──────────────────────
   // Set font dulu sebelum mengukur agar widthOfString akurat
@@ -658,7 +658,32 @@ function renderTable(doc, table, x, startY) {
       const cellBlocks = cell.blocks || [];
       const cellAlign  = cell.align || 'left';
       const tw = cW - PADX * 2;
-      let cellY = Y + PADY;
+
+      // Hitung tinggi konten sel untuk vertical centering
+      let contentH = 0;
+      if (cellBlocks.length > 0) {
+        for (const cb of cellBlocks) {
+          if (cb.type === 'empty') {
+            contentH += FS_ISI * 1.2;
+          } else {
+            const segs = cb.segs || [];
+            const txt  = segs.map(s => s.text).join('');
+            try {
+              doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
+              contentH += doc.heightOfString(txt || ' ', { width: tw, lineGap: LINE_GAP_TABLE }) + 1;
+            } catch (_) { contentH += FS_ISI * 1.2; }
+          }
+        }
+      } else {
+        try {
+          doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
+          contentH = doc.heightOfString(cell.plain || ' ', { width: tw, lineGap: LINE_GAP_TABLE });
+        } catch (_) { contentH = FS_ISI * 1.2; }
+      }
+
+      // Posisi Y agar teks vertikal center dalam baris
+      const vertOffset = Math.max(0, (rowH - contentH) / 2);
+      let cellY = Y + vertOffset;
 
       if (cellBlocks.length > 0) {
         for (const cb of cellBlocks) {
