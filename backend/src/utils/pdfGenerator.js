@@ -1121,42 +1121,38 @@ function getNamaJenisSurat(kode) {
   return map[kode] || kode;
 }
 
-// ── HELPER: TITIMANGSA (tempat & tanggal) ─────────────────────────────────────
+// ── HELPER: TITIMANGSA (tempat & tanggal) — format: "Bandung, tgl hijriyah" + tgl masehi
 function drawTitimangsa(doc, surat, startY) {
-  const hijriyah   = (surat.tanggalHijriyah || '').replace(/H\.?\s*$/, '').trim();
-  const tglHijr    = hijriyah + ' H.';
-  const tglMasehi  = surat.tanggalMasehi
+  const hijriyah  = (surat.tanggalHijriyah || '').replace(/H\.?\s*$/, '').trim();
+  const tglHijr   = hijriyah + ' H.';
+  const tglMasehi = surat.tanggalMasehi
     ? new Date(surat.tanggalMasehi).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' M.'
     : '';
-  const tempat     = surat.tempatTerbit || 'Bandung';
+  const tempat = surat.tempatTerbit || 'Bandung';
 
-  // Blok titimangsa di kanan (lebar ~200)
+  // Blok titimangsa sejajar dengan nama penandatangan (blokX sama dengan drawTandaTangan)
   const blokW  = 200;
   const blokX  = ML + CW - blokW;
-  const labelW = 80;
-  const colonX = blokX + labelW;
-  const valX   = colonX + 8;
-  const valW   = blokW - labelW - 8;
+
+  // Hitung lebar prefix "Bandung, " agar baris kedua indent sejajar
+  doc.font(F_REG).fontSize(FS_ISI);
+  const prefix     = `${tempat}, `;
+  const prefixW    = doc.widthOfString(prefix);
+  const tglHijrW   = blokW - prefixW;
 
   let y = startY;
 
-  doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000');
-  doc.text('Dikeluarkan di', blokX, y, { width: labelW, lineBreak: false });
-  doc.text(':', colonX, y, { width: 8, lineBreak: false });
-  doc.text(tempat, valX, y, { width: valW });
+  // Baris 1: "Bandung, " + tanggal hijriyah
+  doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
+     .text(prefix, blokX, y, { width: prefixW, lineBreak: false });
+  doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
+     .text(tglHijr, blokX + prefixW, y, { width: tglHijrW });
   y = doc.y + 1;
 
-  doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000');
-  doc.text('Pada tanggal', blokX, y, { width: labelW, lineBreak: false });
-  doc.text(':', colonX, y, { width: 8, lineBreak: false });
-  doc.text(tglHijr, valX, y, { width: valW });
-  y = doc.y + 1;
-
+  // Baris 2: tanggal masehi — indent sejajar dengan tanggal hijriyah
   if (tglMasehi) {
-    doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000');
-    doc.text('', blokX, y, { width: labelW, lineBreak: false });
-    doc.text('', colonX, y, { width: 8, lineBreak: false });
-    doc.text(tglMasehi, valX, y, { width: valW });
+    doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
+       .text(tglMasehi, blokX + prefixW, y, { width: tglHijrW });
     y = doc.y + 1;
   }
 
