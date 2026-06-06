@@ -658,32 +658,7 @@ function renderTable(doc, table, x, startY) {
       const cellBlocks = cell.blocks || [];
       const cellAlign  = cell.align || 'left';
       const tw = cW - PADX * 2;
-
-      // Hitung tinggi konten sel untuk vertical centering
-      let contentH = 0;
-      if (cellBlocks.length > 0) {
-        for (const cb of cellBlocks) {
-          if (cb.type === 'empty') {
-            contentH += FS_ISI * 1.2;
-          } else {
-            const segs = cb.segs || [];
-            const txt  = segs.map(s => s.text).join('');
-            try {
-              doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
-              contentH += doc.heightOfString(txt || ' ', { width: tw, lineGap: LINE_GAP_TABLE }) + 1;
-            } catch (_) { contentH += FS_ISI * 1.2; }
-          }
-        }
-      } else {
-        try {
-          doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
-          contentH = doc.heightOfString(cell.plain || ' ', { width: tw, lineGap: LINE_GAP_TABLE });
-        } catch (_) { contentH = FS_ISI * 1.2; }
-      }
-
-      // Posisi Y agar teks vertikal center dalam baris
-      const vertOffset = Math.max(0, (rowH - contentH) / 2);
-      let cellY = Y + vertOffset;
+      let cellY = Y + PADY;
 
       if (cellBlocks.length > 0) {
         for (const cb of cellBlocks) {
