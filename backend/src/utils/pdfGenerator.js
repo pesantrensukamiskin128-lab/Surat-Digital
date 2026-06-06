@@ -29,7 +29,8 @@ const CW = PW - ML - MR;
 // ── FONT SIZES ───────────────────────────────────────────────────────────[...]
 const FS_ISI          = 11;
 const FS_ARAB         = 14;
-const LINE_GAP        = 2;
+const LINE_GAP        = 2;   // line gap untuk paragraf biasa
+const LINE_GAP_TABLE  = 0;   // line gap dalam sel tabel — rapat seperti paragraf biasa
 const FS_KOP_TINGKAT  = 10;
 const FS_KOP_NAMA     = 16;
 const FS_KOP_DAERAH   = 11;
@@ -530,26 +531,26 @@ function estimateBlockHeight(doc, block) {
             }
             try {
               doc.font(F_REG).fontSize(FS_ISI);
-              cellH += doc.heightOfString(txt || ' ', { width: effectiveW, lineGap: LINE_GAP }) + 2;
+              cellH += doc.heightOfString(txt || ' ', { width: effectiveW, lineGap: LINE_GAP_TABLE }) + 1;
             } catch (_) { cellH += FS_ISI * 1.5; }
           } else if (cb.type === 'para') {
             const segs = cb.segs || [];
             const txt = segs.map(s => s.text).join('');
             try {
               doc.font(F_REG).fontSize(FS_ISI);
-              cellH += doc.heightOfString(txt || ' ', { width: tw, lineGap: LINE_GAP }) + 2;
+              cellH += doc.heightOfString(txt || ' ', { width: tw, lineGap: LINE_GAP_TABLE }) + 1;
             } catch (_) { cellH += FS_ISI * 1.5; }
           } else {
             try {
               doc.font(F_REG).fontSize(FS_ISI);
-              cellH += doc.heightOfString(cell.plain || '', { width: tw, lineGap: LINE_GAP }) + 2;
+              cellH += doc.heightOfString(cell.plain || '', { width: tw, lineGap: LINE_GAP_TABLE }) + 1;
             } catch (_) { cellH += FS_ISI * 1.5; }
           }
         }
         if (cellBlocks.length === 0) {
           try {
             doc.font(F_REG).fontSize(FS_ISI);
-            cellH += doc.heightOfString(cell.plain || '', { width: tw, lineGap: LINE_GAP });
+            cellH += doc.heightOfString(cell.plain || '', { width: tw, lineGap: LINE_GAP_TABLE });
           } catch (_) { cellH += FS_ISI * 1.5; }
         }
         if (cellH > rowH) rowH = cellH;
@@ -626,14 +627,14 @@ function renderTable(doc, table, x, startY) {
           const indent = cb.indent || 0;
           try {
             doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
-            cellH += doc.heightOfString(txt || ' ', { width: tw - indent, lineGap: LINE_GAP }) + 2;
+            cellH += doc.heightOfString(txt || ' ', { width: tw - indent, lineGap: LINE_GAP_TABLE }) + 1;
           } catch (_) { cellH += FS_ISI * 1.5; }
         }
       }
       if (cellBlocks.length === 0) {
         try {
           doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
-          cellH += doc.heightOfString(cell.plain || '', { width: tw, lineGap: LINE_GAP });
+          cellH += doc.heightOfString(cell.plain || '', { width: tw, lineGap: LINE_GAP_TABLE });
         } catch (_) { cellH += FS_ISI * 1.5; }
       }
       if (cellH > maxH) maxH = cellH;
@@ -675,18 +676,18 @@ function renderTable(doc, table, x, startY) {
               const prefixW  = doc.widthOfString(prefix);
               const textX2   = cellX + PADX + prefixW;
               const textW2   = tw - prefixW;              // Tulis prefix
-              doc.fillColor('#000000').text(prefix, cellX + PADX, cellY, { width: prefixW + 2, lineBreak: false, lineGap: LINE_GAP });
+              doc.fillColor('#000000').text(prefix, cellX + PADX, cellY, { width: prefixW + 2, lineBreak: false, lineGap: LINE_GAP_TABLE });
               // Tulis teks konten dengan hanging indent
               if (restTxt) {
                 doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-                doc.text(restTxt, textX2, cellY, { width: textW2, align: 'justify', lineGap: LINE_GAP });
+                doc.text(restTxt, textX2, cellY, { width: textW2, align: 'justify', lineGap: LINE_GAP_TABLE });
               }
-              cellY = doc.y + 2;
+              cellY = doc.y + 1;
             } else {
               const txt = segs.map(s => s.text).join('');
               doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-              doc.text(txt, cellX + PADX, cellY, { width: tw, align: 'left', lineGap: LINE_GAP });
-              cellY = doc.y + 2;
+              doc.text(txt, cellX + PADX, cellY, { width: tw, align: 'left', lineGap: LINE_GAP_TABLE });
+              cellY = doc.y + 1;
             }
           } else {
             // para — render dengan format inline
@@ -695,20 +696,20 @@ function renderTable(doc, table, x, startY) {
             if (isArabic(allTxt) && HAS_ARAB) {
               const shaped = reshapeArabic(allTxt.replace(/\n/g, ' ').trim());
               doc.font(F_ARAB).fontSize(FS_ARAB).fillColor('#000000');
-              doc.text(shaped, cellX + PADX, cellY, { width: tw, align: 'center', lineGap: LINE_GAP });
-              cellY = doc.y + 2;
+              doc.text(shaped, cellX + PADX, cellY, { width: tw, align: 'center', lineGap: LINE_GAP_TABLE });
+              cellY = doc.y + 1;
             } else {
               const txt = allTxt;
               doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-              doc.text(txt, cellX + PADX, cellY, { width: tw, align: cellAlign, lineGap: LINE_GAP });
-              cellY = doc.y + 2;
+              doc.text(txt, cellX + PADX, cellY, { width: tw, align: cellAlign, lineGap: LINE_GAP_TABLE });
+              cellY = doc.y + 1;
             }
           }
         }
       } else {
         // Fallback: render plain text
         doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-        doc.text(cell.plain || '', cellX + PADX, cellY, { width: tw, align: cellAlign, lineGap: LINE_GAP });
+        doc.text(cell.plain || '', cellX + PADX, cellY, { width: tw, align: cellAlign, lineGap: LINE_GAP_TABLE });
       }
 
       cellX += cW;
