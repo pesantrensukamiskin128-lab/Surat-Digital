@@ -66,8 +66,8 @@ function SuratMasukPengurus({ search }) {
                 {formatDate(surat.tanggalMasehi)}
               </td>
               <td className="text-xs text-gray-500">
-                <div>{surat.sekretaris?.namaLengkap || '—'}</div>
-                <div>{surat.ketua?.namaLengkap || '—'}</div>
+                <div>{surat.tataUsaha?.namaLengkap || '—'}</div>
+                <div>{surat.kepala?.namaLengkap || '—'}</div>
               </td>
               <td>
                 <div className="flex items-center justify-end gap-1">
@@ -95,13 +95,13 @@ export default function SuratMasukPage() {
   const [search, setSearch] = useState('')
   const [deleteId, setDeleteId] = useState(null)
 
-  const isPengurus = user?.role === 'PENGURUS'
-  const canManage  = ['ADMIN', 'SEKRETARIS', 'KETUA'].includes(user?.role)
+  const isGuru    = user?.role === 'GURU'
+  const canManage = ['ADMIN', 'TATA_USAHA', 'KEPALA'].includes(user?.role)
 
   const { data, isLoading } = useQuery({
     queryKey: ['surat-masuk', search],
     queryFn: () => suratMasukAPI.getAll({ search }).then(r => r.data),
-    enabled: !isPengurus,
+    enabled: !isGuru,
   })
 
   const deleteMutation = useMutation({
@@ -122,7 +122,7 @@ export default function SuratMasukPage() {
         <div>
           <h1 className="page-title">Surat Masuk</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {isPengurus ? 'Surat yang dikirimkan kepada Anda' : 'Arsip surat masuk organisasi'}
+            {isGuru ? 'Surat yang dikirimkan kepada Anda' : 'Arsip surat masuk organisasi'}
           </p>
         </div>
         {canManage && (
@@ -146,11 +146,11 @@ export default function SuratMasukPage() {
       </div>
 
       <div className="card overflow-hidden">
-        {/* Tampilan khusus PENGURUS */}
-        {isPengurus && <SuratMasukPengurus search={search} />}
+        {/* Tampilan khusus GURU */}
+        {isGuru && <SuratMasukPengurus search={search} />}
 
-        {/* Tampilan ADMIN/SEKRETARIS/KETUA */}
-        {!isPengurus && (
+        {/* Tampilan ADMIN/TATA_USAHA/KEPALA */}
+        {!isGuru && (
           isLoading ? (
             <PageLoader />
           ) : suratList.length === 0 ? (

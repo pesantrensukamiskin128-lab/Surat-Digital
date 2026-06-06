@@ -19,8 +19,8 @@ const getAllAgenda = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     let where = {};
-    // Pengurus hanya lihat agenda yang mereka diundang
-    if (req.user.role === 'PENGURUS') {
+    // GURU hanya lihat agenda yang mereka diundang
+    if (req.user.role === 'GURU') {
       where.peserta = { some: { userId: req.user.id } };
     }
     if (search) {
@@ -46,7 +46,7 @@ const getAllAgenda = async (req, res) => {
 const getUpcomingAgenda = async (req, res) => {
   try {
     let where = { tanggal: { gte: new Date() } };
-    if (req.user.role === 'PENGURUS') {
+    if (req.user.role === 'GURU') {
       where.peserta = { some: { userId: req.user.id } };
     }
     const agenda = await prisma.agenda.findMany({
@@ -131,7 +131,10 @@ const createAgenda = async (req, res) => {
 const updateAgenda = async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = await prisma.agenda.findUnique({ where: { id } });
+    const existing = await prisma.agenda.findUnique({
+      where: { id },
+      include: { peserta: { select: { userId: true } } },
+    });
     if (!existing) return res.status(404).json({ success: false, message: 'Agenda tidak ditemukan' });
 
     const { namaAgenda, penyelenggara, kategori, tipe, tempat, tanggal, waktuMulai, waktuSelesai, zonaWaktu, deskripsi, pesertaIds } = req.body;
@@ -162,6 +165,19 @@ const updateAgenda = async (req, res) => {
     });
 
     res.json({ success: true, message: 'Agenda berhasil diperbarui', data: updated });
+
+    // Kirim notifikasi ke peserta baru (yang belum ada sebelumnya)
+    if (pesertaIds?.length) {
+      const existingPesertaIds = (existing.peserta || []).map(p => p.userId);
+      const newPesertaIds = pesertaIds.filter(uid => !existingPesertaIds.includes(uid) && uid !== req.user.id);
+      if (newPesertaIds.length > 0) {
+        await createNotifikasi(newPesertaIds, {
+          judul: '📅 Undangan Agenda',
+          pesan: `Anda diundang ke agenda "${updated.namaAgenda}"`,
+          url: `/agenda/${updated.id}`,
+        });
+      }
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
