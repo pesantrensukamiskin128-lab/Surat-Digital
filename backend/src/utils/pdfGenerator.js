@@ -726,7 +726,7 @@ function renderTable(doc, table, x, startY) {
     }
     Y += rowH;
   }
-  return Y + 6;
+  return Y + 2;
 }
 
 // ── KOP SURAT (dipakai di setiap halaman) ─────────────────────────────────────
@@ -972,6 +972,8 @@ async function renderBodyBlocks(doc, blocks, startY, kopHeight, organisasi, foot
       y += FS_ISI * 1.2;
     } else if (block.type === 'table') {
       y = renderTable(doc, block, ML, y);
+      // Tidak tambah spacing ekstra setelah tabel — sudah cukup rapat
+      continue;
     } else if (block.type === 'listitem') {
       // List item dengan indent
       const indent = block.indent || 20;
