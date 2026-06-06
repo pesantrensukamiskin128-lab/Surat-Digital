@@ -137,7 +137,7 @@ export default function SuratMasukPage() {
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder={isPengurus ? 'Cari perihal atau nomor surat...' : 'Cari perihal, pengirim, atau nomor surat...'}
+            placeholder={isGuru ? 'Cari perihal atau nomor surat...' : 'Cari perihal, pengirim, atau nomor surat...'}
             className="input-field pl-9"
             value={search}
             onChange={e => setSearch(e.target.value)}
