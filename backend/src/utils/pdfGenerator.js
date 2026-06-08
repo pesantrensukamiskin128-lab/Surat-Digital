@@ -142,9 +142,9 @@ function resolveLogoPath(logoPathFromDB) {
 
 // ── INLINE PARSER ─────────────────────────────────────────────────────────[...]
 function parseInline(html) {
-  if (!html) return [{ text: '', b: false, i: false, u: false, link: null }];
+  if (!html) return [{ text: '', b: false, i: false, u: false, s: false, link: null }];
   const segs = [];
-  let bold = false, italic = false, uline = false, link = null;
+  let bold = false, italic = false, uline = false, strike = false, link = null;
   const stack = [];
   const parts = html.replace(/<br\s*\/?>/gi, '\n').split(/(<[^>]+>)/);
 
@@ -154,10 +154,11 @@ function parseInline(html) {
       const isClose = part.startsWith('</');
       const tag = part.replace(/<\/?/, '').replace(/[\s>].*/, '').toLowerCase();
       if (!isClose) {
-        stack.push({ bold, italic, uline, link });
+        stack.push({ bold, italic, uline, strike, link });
         if (tag === 'strong' || tag === 'b') bold = true;
         else if (tag === 'em' || tag === 'i') italic = true;
         else if (tag === 'u') uline = true;
+        else if (tag === 's' || tag === 'del' || tag === 'strike') strike = true;
         else if (tag === 'a') {
           const hm = part.match(/href=["']([^"']+)["']/i);
           link = hm ? hm[1] : null;
@@ -166,19 +167,19 @@ function parseInline(html) {
       } else {
         if (stack.length) {
           const p = stack.pop();
-          bold = p.bold; italic = p.italic; uline = p.uline; link = p.link;
+          bold = p.bold; italic = p.italic; uline = p.uline; strike = p.strike; link = p.link;
         }
       }
     } else {
       const decoded = dec(part);
       const tabs = decoded.split('\t');
       for (let ti = 0; ti < tabs.length; ti++) {
-        if (ti > 0) segs.push({ text: '\t', b: false, i: false, u: false, link: null, isTab: true });
-        if (tabs[ti]) segs.push({ text: tabs[ti], b: bold, i: italic, u: uline, link, isTab: false });
+        if (ti > 0) segs.push({ text: '\t', b: false, i: false, u: false, s: false, link: null, isTab: true });
+        if (tabs[ti]) segs.push({ text: tabs[ti], b: bold, i: italic, u: uline, s: strike, link, isTab: false });
       }
     }
   }
-  return segs.length ? segs : [{ text: '', b: false, i: false, u: false, link: null }];
+  return segs.length ? segs : [{ text: '', b: false, i: false, u: false, s: false, link: null }];
 }
 
 // ── RENDER HELPERS ──────────────────────────────────────────────────────────[...]
@@ -207,8 +208,15 @@ function renderLine(doc, segs, x, y, maxW, align, defBold) {
     const opts = { lineBreak: false, lineGap: LINE_GAP };
     if (seg.u || seg.link) opts.underline = true;
     if (seg.link) opts.link = seg.link;
+    const segW = doc.widthOfString(seg.text);
     doc.text(seg.text, curX, y, { ...opts, width: rem });
-    curX += doc.widthOfString(seg.text);
+    // Strikethrough — garis di tengah tinggi huruf
+    if (seg.s) {
+      const strikeY = y + FS_ISI * 0.35;
+      doc.moveTo(curX, strikeY).lineTo(curX + segW, strikeY)
+         .strokeColor(color).lineWidth(0.6).stroke();
+    }
+    curX += segW;
   }
   return y + FS_ISI * 1.45 + LINE_GAP;
 }
@@ -289,6 +297,14 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
         isFirst = false;
       } else {
         doc.text(seg.text, opts);
+      }
+      // Strikethrough
+      if (seg.s) {
+        const segW    = doc.widthOfString(seg.text);
+        const strikeY = y + FS_ISI * 0.35;
+        doc.moveTo(isFirst ? x : doc.x - segW, strikeY)
+           .lineTo((isFirst ? x : doc.x - segW) + segW, strikeY)
+           .strokeColor(color).lineWidth(0.6).stroke();
       }
     }
     y = doc.y + 2;
@@ -569,7 +585,7 @@ function estimateBlockHeight(doc, block) {
 }
 
 // ── RENDER INLINE SEGMENTS DALAM SEL TABEL ───────────────────────────────────
-// Menangani bold, italic, underline, warna, link per-segment
+// Menangani bold, italic, underline, strikethrough, link per-segment
 // Menggunakan LINE_GAP_TABLE agar baris rapat sesuai pengaturan tabel
 function renderSegsInCell(doc, segs, x, y, maxW, align, forceHeadBold) {
   if (!segs || segs.length === 0) return y;
@@ -579,19 +595,24 @@ function renderSegsInCell(doc, segs, x, y, maxW, align, forceHeadBold) {
     const ln = lines[li];
     if (!ln || ln.length === 0) { y += FS_ISI * 1.2; continue; }
 
-    // Cek apakah semua plain (tidak ada format khusus)
-    const allPlain = ln.every(s => !s.b && !s.i && !s.u && !s.link && !s.color);
+    // Cek apakah semua plain
+    const allPlain = ln.every(s => !s.b && !s.i && !s.u && !s.s && !s.link);
     if (allPlain || ln.length === 1) {
-      const txt  = ln.map(s => s.text).join('');
-      const bold = forceHeadBold || ln.some(s => s.b);
-      doc.font(bold ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor(ln[0]?.color || '#000000');
-      if (ln[0]?.i && !bold) doc.font(F_REG); // italic fallback ke regular (PDFKit tidak ada italic standalone)
+      const txt   = ln.map(s => s.text).join('');
+      const bold  = forceHeadBold || ln.some(s => s.b);
+      const color = ln[0]?.link ? LINK_COLOR : '#000000';
+      doc.font(bold ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor(color);
       doc.text(txt, x, y, { width: maxW, align: align || 'left', lineGap: LINE_GAP_TABLE });
+      if (ln[0]?.s) {
+        const w = doc.widthOfString(txt);
+        doc.moveTo(x, y + FS_ISI * 0.35).lineTo(x + w, y + FS_ISI * 0.35)
+           .strokeColor(color).lineWidth(0.6).stroke();
+      }
       y = doc.y + 1;
       continue;
     }
 
-    // Mixed format — render segment per segment dalam satu baris
+    // Mixed format — render segment per segment
     let curX = x;
     for (let si = 0; si < ln.length; si++) {
       const seg    = ln[si];
@@ -601,19 +622,28 @@ function renderSegsInCell(doc, segs, x, y, maxW, align, forceHeadBold) {
 
       const bold  = forceHeadBold || seg.b;
       const font  = bold ? F_BOLD : F_REG;
-      const color = seg.color || '#000000';
+      const color = seg.link ? LINK_COLOR : '#000000';
       doc.font(font).fontSize(FS_ISI).fillColor(color);
 
+      const segW = doc.widthOfString(seg.text);
       const opts = {
-        continued:  !isLast,
-        lineGap:    LINE_GAP_TABLE,
-        width:      rem,
-        align:      isLast ? (align || 'left') : 'left',
+        continued: !isLast,
+        lineGap:   LINE_GAP_TABLE,
+        width:     rem,
+        align:     isLast ? (align || 'left') : 'left',
       };
       if (seg.u || seg.link) opts.underline = true;
       if (seg.link) opts.link = seg.link;
 
       doc.text(seg.text, curX, y, opts);
+
+      // Strikethrough
+      if (seg.s) {
+        const strikeY = y + FS_ISI * 0.35;
+        doc.moveTo(curX, strikeY).lineTo(curX + segW, strikeY)
+           .strokeColor(color).lineWidth(0.6).stroke();
+      }
+
       if (!isLast) curX = doc.x;
     }
     y = doc.y + 1;
@@ -741,8 +771,20 @@ function renderTable(doc, table, x, startY) {
               // Render list item dengan format inline
               cellY = renderSegsInCell(doc, segs, cellX + PADX, cellY, tw, 'left', isHead);
             }
+          } else if (cb.type === 'image') {
+            // Gambar dalam sel tabel — hanya support base64
+            try {
+              const src = cb.src || '';
+              if (src.startsWith('data:image/')) {
+                const maxImgW = Math.min(tw, 150);
+                doc.image(Buffer.from(src.split(',')[1], 'base64'), cellX + PADX, cellY, {
+                  fit: [maxImgW, 100], align: 'left',
+                });
+                cellY = doc.y + 2;
+              }
+            } catch (_) {}
           } else {
-            // para — render dengan format inline (bold/italic/underline terjaga)
+            // para — render dengan format inline (bold/italic/underline/strikethrough terjaga)
             const segs   = cb.segs || [];
             const allTxt = segs.map(s => s.text).join('');
             if (isArabic(allTxt) && HAS_ARAB) {
