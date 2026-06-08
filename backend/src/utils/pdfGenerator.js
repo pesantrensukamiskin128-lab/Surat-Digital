@@ -568,6 +568,59 @@ function estimateBlockHeight(doc, block) {
   return lines.length * (FS_ISI * 1.45 + LINE_GAP);
 }
 
+// ── RENDER INLINE SEGMENTS DALAM SEL TABEL ───────────────────────────────────
+// Menangani bold, italic, underline, warna, link per-segment
+// Menggunakan LINE_GAP_TABLE agar baris rapat sesuai pengaturan tabel
+function renderSegsInCell(doc, segs, x, y, maxW, align, forceHeadBold) {
+  if (!segs || segs.length === 0) return y;
+
+  const lines = splitByNL(segs);
+  for (let li = 0; li < lines.length; li++) {
+    const ln = lines[li];
+    if (!ln || ln.length === 0) { y += FS_ISI * 1.2; continue; }
+
+    // Cek apakah semua plain (tidak ada format khusus)
+    const allPlain = ln.every(s => !s.b && !s.i && !s.u && !s.link && !s.color);
+    if (allPlain || ln.length === 1) {
+      const txt  = ln.map(s => s.text).join('');
+      const bold = forceHeadBold || ln.some(s => s.b);
+      doc.font(bold ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor(ln[0]?.color || '#000000');
+      if (ln[0]?.i && !bold) doc.font(F_REG); // italic fallback ke regular (PDFKit tidak ada italic standalone)
+      doc.text(txt, x, y, { width: maxW, align: align || 'left', lineGap: LINE_GAP_TABLE });
+      y = doc.y + 1;
+      continue;
+    }
+
+    // Mixed format — render segment per segment dalam satu baris
+    let curX = x;
+    for (let si = 0; si < ln.length; si++) {
+      const seg    = ln[si];
+      const isLast = si === ln.length - 1;
+      const rem    = x + maxW - curX;
+      if (rem < 5) break;
+
+      const bold  = forceHeadBold || seg.b;
+      const font  = bold ? F_BOLD : F_REG;
+      const color = seg.color || '#000000';
+      doc.font(font).fontSize(FS_ISI).fillColor(color);
+
+      const opts = {
+        continued:  !isLast,
+        lineGap:    LINE_GAP_TABLE,
+        width:      rem,
+        align:      isLast ? (align || 'left') : 'left',
+      };
+      if (seg.u || seg.link) opts.underline = true;
+      if (seg.link) opts.link = seg.link;
+
+      doc.text(seg.text, curX, y, opts);
+      if (!isLast) curX = doc.x;
+    }
+    y = doc.y + 1;
+  }
+  return y;
+}
+
 // ── RENDER TABLE ──────────────────────────────────────────────────────────[...]
 function renderTable(doc, table, x, startY) {
   const { headers, rows, borderless } = table;
@@ -665,33 +718,32 @@ function renderTable(doc, table, x, startY) {
           if (cb.type === 'empty') {
             cellY += FS_ISI * 1.2;
           } else if (cb.type === 'listitem') {
-            const segs    = cb.segs || [];
+            const segs     = cb.segs || [];
             const firstSeg = segs[0];
             const isPrefix = firstSeg && /^([•\-]|[A-Za-z]{1,5}\.|\d+\.|[IVXivx]+\.)\s$/.test(firstSeg.text);
 
             if (isPrefix) {
-              const prefix   = firstSeg.text;
-              const restTxt  = segs.slice(1).map(s => s.text).join('');
+              const prefix  = firstSeg.text;
+              const restSegs = segs.slice(1);
               doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI);
-              const prefixW  = doc.widthOfString(prefix);
-              const textX2   = cellX + PADX + prefixW;
-              const textW2   = tw - prefixW;              // Tulis prefix
+              const prefixW = doc.widthOfString(prefix);
+              const textX2  = cellX + PADX + prefixW;
+              const textW2  = tw - prefixW;
+              // Tulis prefix
               doc.fillColor('#000000').text(prefix, cellX + PADX, cellY, { width: prefixW + 2, lineBreak: false, lineGap: LINE_GAP_TABLE });
-              // Tulis teks konten dengan hanging indent
-              if (restTxt) {
-                doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-                doc.text(restTxt, textX2, cellY, { width: textW2, align: 'justify', lineGap: LINE_GAP_TABLE });
+              // Tulis sisa teks dengan format inline (bold/italic tetap terjaga)
+              if (restSegs.length > 0) {
+                cellY = renderSegsInCell(doc, restSegs, textX2, cellY, textW2, 'justify', isHead);
+              } else {
+                cellY = doc.y + 1;
               }
-              cellY = doc.y + 1;
             } else {
-              const txt = segs.map(s => s.text).join('');
-              doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-              doc.text(txt, cellX + PADX, cellY, { width: tw, align: 'left', lineGap: LINE_GAP_TABLE });
-              cellY = doc.y + 1;
+              // Render list item dengan format inline
+              cellY = renderSegsInCell(doc, segs, cellX + PADX, cellY, tw, 'left', isHead);
             }
           } else {
-            // para — render dengan format inline
-            const segs = cb.segs || [];
+            // para — render dengan format inline (bold/italic/underline terjaga)
+            const segs   = cb.segs || [];
             const allTxt = segs.map(s => s.text).join('');
             if (isArabic(allTxt) && HAS_ARAB) {
               const shaped = reshapeArabic(allTxt.replace(/\n/g, ' ').trim());
@@ -699,10 +751,7 @@ function renderTable(doc, table, x, startY) {
               doc.text(shaped, cellX + PADX, cellY, { width: tw, align: 'center', lineGap: LINE_GAP_TABLE });
               cellY = doc.y + 1;
             } else {
-              const txt = allTxt;
-              doc.font(isHead ? F_BOLD : F_REG).fontSize(FS_ISI).fillColor('#000000');
-              doc.text(txt, cellX + PADX, cellY, { width: tw, align: cellAlign, lineGap: LINE_GAP_TABLE });
-              cellY = doc.y + 1;
+              cellY = renderSegsInCell(doc, segs, cellX + PADX, cellY, tw, cellAlign, isHead);
             }
           }
         }
