@@ -6,7 +6,6 @@ import toast from 'react-hot-toast'
 import { organisasiAPI, getUploadUrl } from '../services/api'
 import { PageLoader } from '../components/ui/LoadingSpinner'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
-import { buatSingkatan } from '../utils/helpers'
 
 export default function ProfilOrganisasiPage() {
   const queryClient = useQueryClient()
@@ -79,11 +78,8 @@ export default function ProfilOrganisasiPage() {
   if (isLoading) return <PageLoader />
 
   const currentLogo = logoPreview || (profil?.logoPath ? getUploadUrl(profil.logoPath) : null)
-  // Preview nomor surat — PP.06 statis
-  const singkatan = form.tingkatanOrg && form.namaOrg
-    ? buatSingkatan(form.tingkatanOrg, form.namaOrg)
-    : 'PC-FNU'
-  const previewNomor = `001/A/${singkatan}/PP.06/V/${new Date().getFullYear()}`
+  // Preview nomor surat — singkatan dan PP.06 statis
+  const previewNomor = `001/A/MA-YPPS/PP.06/V/${new Date().getFullYear()}`
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -158,7 +154,7 @@ export default function ProfilOrganisasiPage() {
             <p className="text-xs text-gray-500 mb-1">Preview format nomor surat:</p>
             <p className="font-mono text-sm font-semibold text-primary-700">{previewNomor}</p>
             <p className="text-xs text-gray-400 mt-1">
-              Urutan / Jenis / <strong>{singkatan}</strong> / PP.06 / Bulan-Romawi / Tahun
+              Urutan / Jenis / <strong>MA-YPPS</strong> / PP.06 / Bulan-Romawi / Tahun
             </p>
           </div>
         </div>

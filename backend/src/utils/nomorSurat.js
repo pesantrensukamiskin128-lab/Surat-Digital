@@ -50,11 +50,8 @@ async function generateNomorSurat(jenisSurat = 'A') {
 
   const urutan = String(count + 1).padStart(3, '0');
 
-  // Ambil profil organisasi
-  const profil    = await prisma.organisasiProfil.findFirst();
-  const tingkatan = profil?.tingkatanOrg || 'Pimpinan Cabang';
-  const namaOrg   = profil?.namaOrg      || 'Fatayat Nahdlatul Ulama';
-  const singkatan = buatSingkatan(tingkatan, namaOrg);
+  // Singkatan organisasi — statis sesuai ketentuan
+  const singkatan = 'MA-YPPS';
 
   return `${urutan}/${jenisSurat}/${singkatan}/${KODE_KLASIFIKASI}/${BULAN_ROMAWI[bulan - 1]}/${tahun}`;
 }
