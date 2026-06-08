@@ -203,14 +203,13 @@ function renderLine(doc, segs, x, y, maxW, align, defBold) {
     const font  = pickFont(seg.b || defBold, seg.i);
     const color = seg.link ? LINK_COLOR : '#000000';
     doc.font(font).fontSize(FS_ISI).fillColor(color);
-    const rem = x + maxW - curX;
+    const rem  = x + maxW - curX;
     if (rem < 5) break;
+    const segW = doc.widthOfString(seg.text);
     const opts = { lineBreak: false, lineGap: LINE_GAP };
     if (seg.u || seg.link) opts.underline = true;
     if (seg.link) opts.link = seg.link;
-    const segW = doc.widthOfString(seg.text);
     doc.text(seg.text, curX, y, { ...opts, width: rem });
-    // Strikethrough — garis di tengah tinggi huruf
     if (seg.s) {
       const strikeY = y + FS_ISI * 0.35;
       doc.moveTo(curX, strikeY).lineTo(curX + segW, strikeY)
@@ -233,8 +232,8 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
     return doc.y + 4;
   }
 
-  // Cek apakah semua segmen punya format yang sama (tidak ada mixed bold/italic/link)
-  const hasFormatting = segs.some(s => s.b || s.i || s.u || s.link || s.isTab);
+  // Cek apakah semua segmen punya format yang sama (tidak ada mixed bold/italic/link/strike)
+  const hasFormatting = segs.some(s => s.b || s.i || s.u || s.s || s.link || s.isTab);
 
   if (!hasFormatting) {
     // Render sederhana — biarkan PDFKit handle word-wrap & align
@@ -250,7 +249,7 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
     if (!ln.length) { y += FS_ISI * 1.45; continue; }
 
     // Cek apakah baris ini semua satu format
-    const lnHasFormat = ln.some(s => s.b || s.i || s.u || s.link || s.isTab);
+    const lnHasFormat = ln.some(s => s.b || s.i || s.u || s.s || s.link || s.isTab);
     if (!lnHasFormat) {
       const txt = ln.map(s => s.text).join('');
       doc.font(pickFont(defBold, false)).fontSize(FS_ISI).fillColor('#000000');
@@ -259,24 +258,37 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
       continue;
     }
 
-    // Untuk align center/right: PDFKit continued tidak support align dengan benar.
-    // Render semua teks sebagai satu string dengan font dominan, lalu overlay bold/italic
-    // dengan cara: cek apakah semua segmen punya bold yang sama
     const effectiveAlign = align || 'justify';
     if (effectiveAlign === 'center' || effectiveAlign === 'right') {
-      // Ambil font dari segmen pertama yang punya teks
-      const firstSeg = ln.find(s => s.text && !s.isTab);
-      const dominantFont = firstSeg ? pickFont(firstSeg.b || defBold, firstSeg.i) : pickFont(defBold, false);
-      const fullTxt = ln.filter(s => !s.isTab).map(s => s.text).join('');
-      doc.font(dominantFont).fontSize(FS_ISI).fillColor('#000000');
-      doc.text(fullTxt, x, y, { width: maxW, align: effectiveAlign, lineGap: LINE_GAP });
+      // Render per-segment agar strikethrough bisa diapply
+      let curX = x;
+      const validSegs = ln.filter(s => !s.isTab && s.text);
+      for (let si = 0; si < validSegs.length; si++) {
+        const seg    = validSegs[si];
+        const isLast = si === validSegs.length - 1;
+        const font   = pickFont(seg.b || defBold, seg.i);
+        const color  = seg.link ? LINK_COLOR : '#000000';
+        doc.font(font).fontSize(FS_ISI).fillColor(color);
+        const segW = doc.widthOfString(seg.text);
+        const opts = { continued: !isLast, lineGap: LINE_GAP, width: maxW, align: effectiveAlign };
+        if (seg.u || seg.link) opts.underline = true;
+        if (seg.link) opts.link = seg.link;
+        if (si === 0) doc.text(seg.text, x, y, opts);
+        else doc.text(seg.text, opts);
+        if (seg.s) {
+          const strikeY = y + FS_ISI * 0.35;
+          doc.moveTo(curX, strikeY).lineTo(curX + segW, strikeY)
+             .strokeColor(color).lineWidth(0.6).stroke();
+        }
+        if (!isLast) curX = doc.x;
+      }
       y = doc.y + 2;
       continue;
     }
 
     // Untuk justify/left: render segment per segment dengan continued:true
     let isFirst = true;
-    // Filter segmen yang punya teks
+    let curX = x;
     const validSegs = ln.filter(s => !s.isTab && s.text);
     for (let si = 0; si < validSegs.length; si++) {
       const seg = validSegs[si];
@@ -284,6 +296,7 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
       const color = seg.link ? LINK_COLOR : '#000000';
       doc.font(font).fontSize(FS_ISI).fillColor(color);
       const isLast = si === validSegs.length - 1;
+      const segW = doc.widthOfString(seg.text);
       const opts = {
         continued: !isLast,
         lineGap: LINE_GAP,
@@ -298,14 +311,13 @@ function renderSegs(doc, segs, x, y, maxW, align, defBold) {
       } else {
         doc.text(seg.text, opts);
       }
-      // Strikethrough
+      // Strikethrough — gambar garis di posisi curX yang sudah diketahui
       if (seg.s) {
-        const segW    = doc.widthOfString(seg.text);
         const strikeY = y + FS_ISI * 0.35;
-        doc.moveTo(isFirst ? x : doc.x - segW, strikeY)
-           .lineTo((isFirst ? x : doc.x - segW) + segW, strikeY)
+        doc.moveTo(curX, strikeY).lineTo(curX + segW, strikeY)
            .strokeColor(color).lineWidth(0.6).stroke();
       }
+      curX = isLast ? curX : doc.x;
     }
     y = doc.y + 2;
   }
