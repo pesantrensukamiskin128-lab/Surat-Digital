@@ -956,7 +956,7 @@ function drawIdentitasSurat(doc, surat, startY) {
     y = doc.y + 1;
   }
 
-  return y + 2;
+  return y + 4;
 }
 
 // ── TUJUAN SURAT ──────────────────────────────────────────────────────────[...]
@@ -985,7 +985,7 @@ function drawTujuan(doc, surat, startY) {
   y = doc.y + 1;
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text('        Tempat', ML, y, { width: CW });
-  y = doc.y + 4;
+  y = doc.y + 2;
   return y;
 }
 
@@ -1102,7 +1102,7 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
 
   const kepala = surat.kepala;
 
-  let y = startY + 4;
+  let y = startY + 2;
 
   // Jabatan Kepala
   const jabatanKepala = kepala?.jabatan || 'Kepala Madrasah';
@@ -1136,7 +1136,7 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
     }
   }
 
-  return y + 6;
+  return y + 4;
 }
 
 // ── FOOTER HALAMAN BIASA (hanya nomor halaman) ───────────────────────────────
@@ -1234,7 +1234,7 @@ function drawTitimangsa(doc, surat, startY) {
     y = doc.y + 1;
   }
 
-  return y + 6;
+  return y + 2;
 }
 
 // ── HELPER: TITIMANGSA SK (Ditetapkan di / Tanggal) ──────────────────────────
@@ -1275,7 +1275,7 @@ function drawTitimangsaSK(doc, surat, startY) {
     y = doc.y + 1;
   }
 
-  return y + 6;
+  return y + 2;
 }
 
 // ── LAYOUT 2: SURAT KHUSUS (C,D,E,F,G,H,I,J,K) ───────────────────────────────
@@ -1291,7 +1291,7 @@ async function generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RE
   // ── Kop ──
   let y = await drawKopSurat(doc, organisasi, MT);
   const kopHeight = y;
-  y += 8;
+  y += 4;
 
   // ── Judul jenis surat (tengah, bold) ──
   const namaJenis = getNamaJenisSurat(surat.jenisSurat);
@@ -1302,7 +1302,7 @@ async function generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RE
   // ── Nomor surat (tengah) ──
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text(`Nomor: ${surat.nomorSurat || '-'}`, ML, y, { width: CW, align: 'center' });
-  y = doc.y + 14;
+  y = doc.y + 8;
 
   // ── Isi surat ──
   const bodyMax = PH - FOOTER_RESERVE;
@@ -1370,7 +1370,7 @@ async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERV
   // ── Kop ──
   let y = await drawKopSurat(doc, organisasi, MT);
   const kopHeight = y;
-  y += 8;
+  y += 4;
 
   // ── SURAT KEPUTUSAN (bold, tengah) ──
   doc.font(F_BOLD).fontSize(FS_ISI + 1).fillColor('#000000')
@@ -1380,7 +1380,7 @@ async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERV
   // ── Nomor ──
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text(`Nomor: ${surat.nomorSurat || '-'}`, ML, y, { width: CW, align: 'center' });
-  y = doc.y + 8;
+  y = doc.y + 4;
 
   // ── Tentang ──
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
@@ -1391,7 +1391,7 @@ async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERV
   if (surat.perihal) {
     doc.font(F_BOLD).fontSize(FS_ISI).fillColor('#000000')
        .text(surat.perihal.toUpperCase(), ML, y, { width: CW, align: 'center' });
-    y = doc.y + 14;
+    y = doc.y + 8;
   }
 
   // ── Isi surat ──
@@ -1434,7 +1434,7 @@ async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERV
     // Header lampiran SK
     doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
        .text(`Lampiran Surat Nomor: ${surat.nomorSurat || '-'}`, ML, y, { width: CW });
-    y = doc.y + 12;
+    y = doc.y + 8;
 
     for (const block of lampiranBlocks) {
       const bh = estimateBlockHeight(doc, block) + 4;
@@ -1501,7 +1501,7 @@ async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RES
   if (surat.tujuanSurat || surat.penerimaEksternal) {
     y = drawTujuan(doc, surat, y);
   } else {
-    y += 8;
+    y += 4;
   }
 
   const totalPages = await countPages(doc, surat, organisasi, bodyBlocks, lampiranBlocks, kopHeight, FOOTER_RESERVE);
@@ -1533,7 +1533,7 @@ async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RES
 
     doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
        .text(`Lampiran Surat Nomor  :  ${surat.nomorSurat || '-'}`, ML, y, { width: CW });
-    y = doc.y + 12;
+    y = doc.y + 8;
 
     const bodyMaxLam = PH - FOOTER_RESERVE;
     for (const block of lampiranBlocks) {
