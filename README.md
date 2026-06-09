@@ -1,4 +1,4 @@
-# SAFIRA - Sistem Administrasi Fatayat untuk Informasi Risalah dan Arsip
+# SIRAMA - Sistem Informasi Risalah dan Administrasi Madrasah
 
 Aplikasi manajemen surat digital dengan fitur tanda tangan elektronik berjenjang, arsip surat masuk/keluar, dan verifikasi QR Code.
 
