@@ -930,13 +930,13 @@ async function drawKopSurat(doc, organisasi, pageY) {
   const lineY = Math.max(y + 4, (pageY !== undefined ? pageY : MT) + logoMaxSize + 4);
   doc.moveTo(ML, lineY).lineTo(ML + CW, lineY).lineWidth(2.5).strokeColor(GREEN).stroke();
 
-  return lineY + 10;
+  return lineY + 4;
 }
 
 // ── IDENTITAS SURAT ─────────────────────────────────────────────────────────[...]
 // Untuk layout rutin (A/B): hanya Nomor, Lampiran, Perihal — tanggal dipindah ke bawah isi surat
 function drawIdentitasSurat(doc, surat, startY) {
-  let y = startY + 4;
+  let y = startY + 2;
   const labelX = ML;
   const colonX = ML + 100;
   const valueX = colonX + 8;
@@ -956,7 +956,7 @@ function drawIdentitasSurat(doc, surat, startY) {
     y = doc.y + 1;
   }
 
-  return y + 8;
+  return y + 2;
 }
 
 // ── TUJUAN SURAT ──────────────────────────────────────────────────────────[...]
@@ -985,7 +985,7 @@ function drawTujuan(doc, surat, startY) {
   y = doc.y + 1;
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text('        Tempat', ML, y, { width: CW });
-  y = doc.y + 10;
+  y = doc.y + 4;
   return y;
 }
 
@@ -1102,13 +1102,13 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
 
   const kepala = surat.kepala;
 
-  let y = startY + 8;
+  let y = startY + 4;
 
   // Jabatan Kepala
   const jabatanKepala = kepala?.jabatan || 'Kepala Madrasah';
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text(jabatanKepala + ',', blokX, y, { width: blokW, align: 'left' });
-  y = doc.y + 4;
+  y = doc.y + 2;
 
   // QR code
   if (qrDataUrl) {
