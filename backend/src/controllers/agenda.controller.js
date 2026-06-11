@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
 const { createNotifikasi } = require('../utils/notifikasi');
+const { getFrontendUrl } = require('../utils/qrcode');
 const QRCode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
@@ -203,7 +204,7 @@ const getQRCode = async (req, res) => {
     const agenda = await prisma.agenda.findUnique({ where: { id: req.params.id } });
     if (!agenda) return res.status(404).json({ success: false, message: 'Agenda tidak ditemukan' });
 
-    const url = `${process.env.FRONTEND_URL}/hadir/${agenda.qrToken}`;
+    const url = `${getFrontendUrl()}/hadir/${agenda.qrToken}`;
     const qrDataUrl = await QRCode.toDataURL(url, { width: 400, margin: 2 });
     res.json({ success: true, qrDataUrl, url });
   } catch (err) {
