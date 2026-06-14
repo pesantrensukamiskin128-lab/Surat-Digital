@@ -1280,7 +1280,7 @@ function drawTitimangsaSK(doc, surat, startY) {
 
 // ── LAYOUT 2: SURAT KHUSUS (C,D,E,F,G,H,I,J,K) ───────────────────────────────
 // Judul jenis surat + nomor di tengah, titimangsa sebelum TTD, lampiran tanpa TTD
-async function generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE) {
+async function generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl) {
   const bodyBlocks     = parseHtml(surat.isiSurat || '');
   const lampiranBlocks = surat.lampiranIsi ? parseHtml(surat.lampiranIsi) : [];
 
@@ -1329,7 +1329,7 @@ async function generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RE
   for (let pi = 0; pi < range.count; pi++) {
     doc.switchToPage(range.start + pi);
     if (pi === range.count - 1) {
-      await drawFooter(doc, surat, qrDataUrl, pi + 1, totalPages);
+      await drawFooter(doc, surat, qrFooterUrl || qrDataUrl, pi + 1, totalPages);
     } else {
       drawFooterSimple(doc, pi + 1, totalPages);
     }
@@ -1361,7 +1361,7 @@ async function generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RE
 // ── LAYOUT 3: SURAT KEPUTUSAN (SK) ───────────────────────────────────────────
 // Judul + nomor + "Tentang" + perihal di tengah, titimangsa SK sebelum TTD,
 // lampiran dengan titimangsa SK & TTD di akhir
-async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE) {
+async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl) {
   const bodyBlocks     = parseHtml(surat.isiSurat || '');
   const lampiranBlocks = surat.lampiranIsi ? parseHtml(surat.lampiranIsi) : [];
   let totalPages = 1;
@@ -1419,7 +1419,7 @@ async function generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERV
   for (let pi = 0; pi < range.count; pi++) {
     doc.switchToPage(range.start + pi);
     if (pi === range.count - 1) {
-      await drawFooter(doc, surat, qrDataUrl, pi + 1, totalPages);
+      await drawFooter(doc, surat, qrFooterUrl || qrDataUrl, pi + 1, totalPages);
     } else {
       drawFooterSimple(doc, pi + 1, totalPages);
     }
@@ -1489,7 +1489,7 @@ async function countPages(doc, surat, organisasi, bodyBlocks, lampiranBlocks, ko
 }
 
 // ── LAYOUT 1: SURAT RUTIN (A, B) — layout existing ───────────────────────────
-async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE) {
+async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl) {
   const bodyBlocks     = parseHtml(surat.isiSurat || '');
   const lampiranBlocks = surat.lampiranIsi ? parseHtml(surat.lampiranIsi) : [];
 
@@ -1520,7 +1520,7 @@ async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RES
   for (let pi = 0; pi < range.count; pi++) {
     doc.switchToPage(range.start + pi);
     if (pi === range.count - 1) {
-      await drawFooter(doc, surat, qrDataUrl, pi + 1, totalPages);
+      await drawFooter(doc, surat, qrFooterUrl || qrDataUrl, pi + 1, totalPages);
     } else {
       drawFooterSimple(doc, pi + 1, totalPages);
     }
@@ -1558,9 +1558,11 @@ async function generateSuratPDF(surat, organisasi) {
   const filename  = `surat-${safeNomor}-${Date.now()}.pdf`;
   const filepath  = path.join(uploadDir, filename);
 
-  let qrDataUrl = null;
+  let qrDataUrl = null;       // untuk tanda tangan (tanpa logo)
+  let qrFooterUrl = null;    // untuk footer verifikasi (dengan logo)
   if (surat.qrCodeToken) {
     try { qrDataUrl = await generateQRCodeDataURL(surat.qrCodeToken); } catch (_) {}
+    try { qrFooterUrl = await generateQRCodeDataURLWithLogo(surat.qrCodeToken); } catch (_) {}
   }
 
   surat.organisasiNama = organisasi.namaOrg
@@ -1581,13 +1583,13 @@ async function generateSuratPDF(surat, organisasi) {
 
       if (jenis === 'SK') {
         // Layout 3: Surat Keputusan
-        await generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE);
+        await generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl);
       } else if (jenis === 'A' || jenis === 'B') {
         // Layout 1: Surat Rutin
-        await generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE);
+        await generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl);
       } else {
         // Layout 2: Surat Khusus (C,D,E,F,G,H,I,J,K)
-        await generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE);
+        await generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl);
       }
 
       doc.end();
