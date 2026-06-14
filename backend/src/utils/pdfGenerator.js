@@ -1097,7 +1097,7 @@ async function renderBodyBlocks(doc, blocks, startY, kopHeight, organisasi, foot
 async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
   const blokW  = 200;                    // lebar blok TTD
   const blokX  = ML + CW - blokW;       // posisi X (rata kanan)
-  const qrSz   = 45;
+  const qrSz   = 40;
   const gapTtd = FS_ISI * 4;            // ruang tanda tangan
 
   const kepala = surat.kepala;
