@@ -2,7 +2,7 @@
 const PDFDocument = require('pdfkit');
 const path        = require('path');
 const fs2         = require('fs');
-const { generateQRCodeDataURL, getFrontendUrl } = require('./qrcode');
+const { generateQRCodeDataURL, generateQRCodeDataURLWithLogo, getFrontendUrl } = require('./qrcode');
 
 // ── FONT PATHS ────────────────────────────────────────────────────────────[...]
 const FONTS_DIR  = path.join(__dirname, 'fonts');

@@ -164,7 +164,8 @@ async function generateQRCode(token, suratId) {
 }
 
 /**
- * Generate QR Code sebagai Data URL (base64) — untuk embed di PDF
+ * Generate QR Code sebagai Data URL (base64) — untuk embed di PDF (tanda tangan).
+ * Tidak menggunakan logo agar QR lebih mudah terbaca saat dicetak.
  */
 async function generateQRCodeDataURL(token) {
   const frontendUrl   = getFrontendUrl();
@@ -178,14 +179,32 @@ async function generateQRCodeDataURL(token) {
     errorCorrectionLevel: 'H',
   });
 
-  // Overlay logo jika tersedia
+  // Tidak overlay logo — QR pada tanda tangan dibiarkan bersih
+  return `data:image/png;base64,${qrBuffer.toString('base64')}`;
+}
+
+/**
+ * Generate QR Code sebagai Data URL (base64) dengan overlay logo — untuk footer verifikasi di PDF.
+ */
+async function generateQRCodeDataURLWithLogo(token) {
+  const frontendUrl   = getFrontendUrl();
+  const verifikasiUrl = `${frontendUrl}/verifikasi/${token}`;
+  const qrSize        = 300;
+
+  const qrBuffer = await QRCode.toBuffer(verifikasiUrl, {
+    color: { dark: '#166534', light: '#FFFFFF' },
+    width: qrSize,
+    margin: 1,
+    errorCorrectionLevel: 'H',
+  });
+
   const logoPath = await getOrgLogoPath();
   let finalBuffer = qrBuffer;
   if (logoPath) {
     try {
       finalBuffer = await overlayLogo(qrBuffer, logoPath, qrSize);
     } catch (err) {
-      console.warn('⚠️ Gagal overlay logo pada QR Code DataURL:', err.message);
+      console.warn('⚠️ Gagal overlay logo pada QR Code footer:', err.message);
       finalBuffer = qrBuffer;
     }
   }
@@ -193,4 +212,4 @@ async function generateQRCodeDataURL(token) {
   return `data:image/png;base64,${finalBuffer.toString('base64')}`;
 }
 
-module.exports = { generateQRCode, generateQRCodeDataURL, resetLogoCache, getFrontendUrl };
+module.exports = { generateQRCode, generateQRCodeDataURL, generateQRCodeDataURLWithLogo, resetLogoCache, getFrontendUrl };
