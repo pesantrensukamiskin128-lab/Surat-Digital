@@ -155,7 +155,7 @@ const updateSurat = async (req, res) => {
         lampiranIsi:     lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
         tujuanSurat:     tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
         tanggalMasehi:   tanggal,
-        tanggalHijriyah: hijriyah.Formatted,
+        tanggalHijriyah: hijriyahFormatted,
         tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
         status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
         tataUsahaId:     tataUsahaId     !== undefined ? tataUsahaId     : existing.tataUsahaId,
@@ -166,9 +166,6 @@ const updateSurat = async (req, res) => {
         ttdKepala:       false,
         tglParafTataUsaha: null,
         tglTtdKepala:    null,
-        penerimaInternal: penerimaInternalIds?.length
-          ? { create: penerimaInternalIds.map(uid => ({ userId: uid })) }
-          : undefined,
       },
       include: suratInclude,
     });
