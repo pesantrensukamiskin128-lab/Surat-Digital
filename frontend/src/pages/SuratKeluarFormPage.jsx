@@ -87,7 +87,7 @@ export default function SuratKeluarFormPage() {
   const queryClient = useQueryClient()
   const isEdit = !!id
 
-  const [form, setForm] = useState(defaultForm)
+  const [form, setForm] = useState(makeDefaultForm)
   const [previewModal, setPreviewModal] = useState(false)
   const [templateModal, setTemplateModal] = useState(false)
   const [templateSearch, setTemplateSearch] = useState('')
@@ -124,8 +124,6 @@ export default function SuratKeluarFormPage() {
 
   useEffect(() => {
     if (existingSurat) {
-      const parsed = parseHijriyah(existingSurat.tanggalHijriyah)
-      const defForm = makeDefaultForm()
       setForm({
         jenisSurat:          existingSurat.jenisSurat          || 'A',
         perihal:             existingSurat.perihal              || '',
@@ -133,14 +131,15 @@ export default function SuratKeluarFormPage() {
         isiSurat:            existingSurat.isiSurat             || '',
         lampiranIsi:         existingSurat.lampiranIsi          || '',
         tujuanSurat:         existingSurat.tujuanSurat          || '',
-        tanggalMasehi:       existingSurat.tanggalMasehi?.split('T')[0] || defForm.tanggalMasehi,
-        tanggalHijriyah:     existingSurat.tanggalHijriyah      || defForm.tanggalHijriyah,
+        tanggalMasehi:       existingSurat.tanggalMasehi?.split('T')[0] || new Date().toISOString().split('T')[0],
+        tanggalHijriyah:     existingSurat.tanggalHijriyah      || '',
         tempatTerbit:        existingSurat.tempatTerbit         || 'Bandung',
         tataUsahaId:         existingSurat.tataUsahaId          || '',
         kepalaId:            existingSurat.kepalaId             || '',
         penerimaEksternal:   existingSurat.penerimaEksternal    || '',
         penerimaInternalIds: existingSurat.penerimaInternal?.map(p => p.userId) || [],
       })
+      const parsed = parseHijriyah(existingSurat.tanggalHijriyah)
       if (parsed) {
         setHijri(parsed)
         setHijriManual(true)
