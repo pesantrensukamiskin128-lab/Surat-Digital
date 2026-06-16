@@ -89,7 +89,7 @@ const createSurat = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Perihal, isi surat, dan tanggal diperlukan' });
 
     const tanggal = new Date(tanggalMasehi);
-    const hijriyah = toHijriyah(tanggal);
+    const hijriyahFormatted = tanggalHijriyah || toHijriyah(tanggal).formatted;
 
     const surat = await prisma.suratKeluar.create({
       data: {
