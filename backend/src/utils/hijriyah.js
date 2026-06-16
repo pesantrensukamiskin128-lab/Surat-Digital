@@ -1,6 +1,6 @@
 /**
  * Konversi tanggal Masehi ke Hijriyah
- * Menggunakan algoritma konversi kalender
+ * Menggunakan Intl.DateTimeFormat dengan kalender islamic-civil
  */
 
 const BULAN_HIJRIYAH = [
@@ -10,45 +10,26 @@ const BULAN_HIJRIYAH = [
 ];
 
 function toHijriyah(date) {
+  // Pakai noon agar tidak terpengaruh timezone offset
   const d = new Date(date);
-  
-  // Algoritma konversi Julian Day Number ke Hijriyah
-  const jd = gregorianToJD(d.getFullYear(), d.getMonth() + 1, d.getDate());
-  const hijri = jdToHijri(jd);
-  
+  const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+
+  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-civil', {
+    day: 'numeric', month: 'numeric', year: 'numeric',
+  }).formatToParts(noon);
+
+  const get = (type) => parseInt(parts.find(p => p.type === type)?.value || '0');
+  const day   = get('day');
+  const month = get('month');
+  const year  = get('year');
+
   return {
-    day: hijri.day,
-    month: hijri.month,
-    year: hijri.year,
-    monthName: BULAN_HIJRIYAH[hijri.month - 1],
-    formatted: `${hijri.day} ${BULAN_HIJRIYAH[hijri.month - 1]} ${hijri.year} H`
+    day,
+    month,
+    year,
+    monthName: BULAN_HIJRIYAH[month - 1],
+    formatted: `${day} ${BULAN_HIJRIYAH[month - 1]} ${year} H`,
   };
-}
-
-function gregorianToJD(year, month, day) {
-  if (month <= 2) {
-    year -= 1;
-    month += 12;
-  }
-  const A = Math.floor(year / 100);
-  const B = 2 - A + Math.floor(A / 4);
-  return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
-}
-
-function jdToHijri(jd) {
-  jd = Math.floor(jd) + 0.5;
-  const z = jd - 1948438.5;
-  const a = Math.floor(z / 10631);
-  const b = z - 10631 * a;
-  const c = Math.floor((b - 0.5) / 354.367);
-  const d = b - Math.floor(354.367 * c + 0.5);
-  const j = Math.floor((d + 0.5) / 29.5);
-  
-  const year = 30 * a + c + 1;
-  const month = j + 1;
-  const day = Math.floor(d - 29.5 * j + 0.5);
-  
-  return { day, month: month > 12 ? 12 : month, year };
 }
 
 function formatTanggalLengkap(tanggalMasehi, tanggalHijriyah) {

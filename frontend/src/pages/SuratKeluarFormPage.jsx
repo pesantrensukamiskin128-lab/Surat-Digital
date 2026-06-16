@@ -9,65 +9,76 @@ import RichTextEditor from '../components/editor/RichTextEditor'
 import PDFPreviewModal from '../components/ui/PDFPreviewModal'
 import { JENIS_SURAT_OPTIONS } from '../utils/helpers'
 
-// ── Konversi Hijriyah (client-side) ─────────────────────────────────────────
+// ── Hijriyah helpers ─────────────────────────────────────────────────────────
 const BULAN_HIJRIYAH = [
   "Muharram","Shafar","Rabi'ul Awwal","Rabi'ul Akhir",
   "Jumadil Awwal","Jumadil Akhir","Rajab","Sya'ban",
   "Ramadhan","Syawal","Dzulqa'dah","Dzulhijjah",
 ]
-function gregorianToJD(y, m, d) {
-  if (m <= 2) { y -= 1; m += 12 }
-  const A = Math.floor(y / 100)
-  const B = 2 - A + Math.floor(A / 4)
-  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5
+
+// Konversi tanggal masehi (string YYYY-MM-DD) → objek hijriyah {day, month, year}
+// Menggunakan Intl.DateTimeFormat islamic-civil yang sesuai standar hisab ummul qura
+function toHijriObj(dateStr) {
+  if (!dateStr) return null
+  // Gunakan noon (12:00) agar tidak terpengaruh timezone saat parsing date-only string
+  const d = new Date(dateStr + 'T12:00:00')
+  const parts = new Intl.DateTimeFormat('en-u-ca-islamic-civil', {
+    day: 'numeric', month: 'numeric', year: 'numeric',
+  }).formatToParts(d)
+  const get = (type) => parseInt(parts.find(p => p.type === type)?.value || '0')
+  return { day: get('day'), month: get('month'), year: get('year') }
 }
-function jdToHijri(jd) {
-  jd = Math.floor(jd) + 0.5
-  const z = jd - 1948438.5
-  const a = Math.floor(z / 10631)
-  const b = z - 10631 * a
-  const c = Math.floor((b - 0.5) / 354.367)
-  const d2 = b - Math.floor(354.367 * c + 0.5)
-  const j = Math.floor((d2 + 0.5) / 29.5)
-  return { day: Math.floor(d2 - 29.5 * j + 0.5), month: Math.min(j + 1, 12), year: 30 * a + c + 1 }
+
+// Ambil tanggal hijriyah saat ini, dengan memperhitungkan pergantian hari pukul 18.00
+function todayHijriObj() {
+  const now = new Date()
+  // Jika sudah lewat pukul 18.00, hari Hijriyah sudah berganti ke esok
+  if (now.getHours() >= 18) {
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const yyyy = tomorrow.getFullYear()
+    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0')
+    const dd = String(tomorrow.getDate()).padStart(2, '0')
+    return toHijriObj(`${yyyy}-${mm}-${dd}`)
+  }
+  const yyyy = now.getFullYear()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return toHijriObj(`${yyyy}-${mm}-${dd}`)
 }
-function toHijriyahStr(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const jd = gregorianToJD(d.getFullYear(), d.getMonth() + 1, d.getDate())
-  const h = jdToHijri(jd)
-  return `${h.day} ${BULAN_HIJRIYAH[h.month - 1]} ${h.year} H`
+
+// Format objek hijriyah → string "DD Bulan YYYY H"
+function hijriObjToStr({ day, month, year }) {
+  return `${day} ${BULAN_HIJRIYAH[month - 1]} ${year} H`
 }
-// Parse string hijriyah ke komponen {day, monthIdx, year}
+
+// Parse string hijriyah → objek {day, month, year} atau null
 function parseHijriyah(str) {
-  if (!str) return { day: '', monthIdx: 0, year: '' }
-  const parts = str.replace(/\s*H\.?\s*$/, '').trim().split(' ')
-  const day  = parseInt(parts[0]) || ''
-  const year = parseInt(parts[parts.length - 1]) || ''
-  const bulanStr = parts.slice(1, parts.length - 1).join(' ')
-  const monthIdx = BULAN_HIJRIYAH.findIndex(b => b.toLowerCase() === bulanStr.toLowerCase())
-  return { day, monthIdx: monthIdx >= 0 ? monthIdx : 0, year }
-}
-function buildHijriyahStr(day, monthIdx, year) {
-  if (!day || !year) return ''
-  return `${day} ${BULAN_HIJRIYAH[monthIdx]} ${year} H`
+  if (!str) return null
+  const match = str.match(/^(\d+)\s+(.+?)\s+(\d+)\s*H?$/i)
+  if (!match) return null
+  const month = BULAN_HIJRIYAH.findIndex(b => b.toLowerCase() === match[2].trim().toLowerCase()) + 1
+  return month > 0 ? { day: parseInt(match[1]), month, year: parseInt(match[3]) } : null
 }
 
 // ── Default form ─────────────────────────────────────────────────────────────
-const defaultForm = {
-  jenisSurat: 'A',
-  perihal: '',
-  lampiran: '',
-  isiSurat: '',
-  lampiranIsi: '',
-  tujuanSurat: '',
-  tanggalMasehi: new Date().toISOString().split('T')[0],
-  tanggalHijriyah: '',
-  tempatTerbit: 'Bandung',
-  tataUsahaId: '',
-  kepalaId: '',
-  penerimaEksternal: '',
-  penerimaInternalIds: [],
+function makeDefaultForm() {
+  const hijri = todayHijriObj()
+  return {
+    jenisSurat: 'A',
+    perihal: '',
+    lampiran: '',
+    isiSurat: '',
+    lampiranIsi: '',
+    tujuanSurat: '',
+    tanggalMasehi: new Date().toISOString().split('T')[0],
+    tanggalHijriyah: hijri ? hijriObjToStr(hijri) : '',
+    tempatTerbit: 'Bandung',
+    tataUsahaId: '',
+    kepalaId: '',
+    penerimaEksternal: '',
+    penerimaInternalIds: [],
+  }
 }
 
 export default function SuratKeluarFormPage() {
@@ -80,8 +91,11 @@ export default function SuratKeluarFormPage() {
   const [previewModal, setPreviewModal] = useState(false)
   const [templateModal, setTemplateModal] = useState(false)
   const [templateSearch, setTemplateSearch] = useState('')
-  // State komponen hijriyah terpisah agar bisa diedit manual
-  const [hijriParts, setHijriParts] = useState(() => parseHijriyah(toHijriyahStr(new Date().toISOString().split('T')[0])))
+
+  // State hijriyah terpisah: {day, month, year} — inisialisasi dari hari ini (dengan offset 18.00)
+  const [hijri, setHijri] = useState(() => todayHijriObj())
+  // Flag untuk mencegah sync otomatis setelah user ubah manual
+  const [hijriManual, setHijriManual] = useState(false)
 
   // Load existing surat for edit
   const { data: existingSurat } = useQuery({
@@ -110,6 +124,8 @@ export default function SuratKeluarFormPage() {
 
   useEffect(() => {
     if (existingSurat) {
+      const parsed = parseHijriyah(existingSurat.tanggalHijriyah)
+      const defForm = makeDefaultForm()
       setForm({
         jenisSurat:          existingSurat.jenisSurat          || 'A',
         perihal:             existingSurat.perihal              || '',
@@ -117,37 +133,22 @@ export default function SuratKeluarFormPage() {
         isiSurat:            existingSurat.isiSurat             || '',
         lampiranIsi:         existingSurat.lampiranIsi          || '',
         tujuanSurat:         existingSurat.tujuanSurat          || '',
-        tanggalMasehi:       existingSurat.tanggalMasehi?.split('T')[0] || defaultForm.tanggalMasehi,
-        tanggalHijriyah:     existingSurat.tanggalHijriyah      || '',
+        tanggalMasehi:       existingSurat.tanggalMasehi?.split('T')[0] || defForm.tanggalMasehi,
+        tanggalHijriyah:     existingSurat.tanggalHijriyah      || defForm.tanggalHijriyah,
         tempatTerbit:        existingSurat.tempatTerbit         || 'Bandung',
         tataUsahaId:         existingSurat.tataUsahaId          || '',
         kepalaId:            existingSurat.kepalaId             || '',
         penerimaEksternal:   existingSurat.penerimaEksternal    || '',
         penerimaInternalIds: existingSurat.penerimaInternal?.map(p => p.userId) || [],
       })
-      setHijriParts(parseHijriyah(existingSurat.tanggalHijriyah || ''))
+      if (parsed) {
+        setHijri(parsed)
+        setHijriManual(true)
+      }
     }
   }, [existingSurat])
 
-  // Auto-hitung Hijriyah dari tanggal masehi (hanya jika belum diedit manual)
-  useEffect(() => {
-    if (form.tanggalMasehi) {
-      const str   = toHijriyahStr(form.tanggalMasehi)
-      const parts = parseHijriyah(str)
-      setHijriParts(parts)
-      setForm(p => ({ ...p, tanggalHijriyah: str }))
-    }
-  }, [form.tanggalMasehi])
-
-  // Sync form.tanggalHijriyah saat hijriParts berubah manual
-  const updateHijriPart = (key, val) => {
-    setHijriParts(p => {
-      const next = { ...p, [key]: val }
-      const str  = buildHijriyahStr(next.day, next.monthIdx, next.year)
-      setForm(f => ({ ...f, tanggalHijriyah: str }))
-      return next
-    })
-  }
+  // useEffect sync hijri→form dihapus — semua handler sudah set form.tanggalHijriyah langsung
 
   const saveMutation = useMutation({
     mutationFn: (data) => isEdit ? suratKeluarAPI.update(id, data) : suratKeluarAPI.create(data),
@@ -270,7 +271,7 @@ export default function SuratKeluarFormPage() {
             </div>
 
             {/* Tanggal */}
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="label">Tempat Terbit</label>
                 <input type="text" className="input-field" placeholder="Bandung"
@@ -281,42 +282,75 @@ export default function SuratKeluarFormPage() {
                 <input type="date" className="input-field" value={form.tanggalMasehi}
                   onChange={e => setForm(p => ({ ...p, tanggalMasehi: e.target.value }))} />
               </div>
-              <div>
-                <label className="label">Tanggal (Hijriyah)</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {/* Tanggal */}
-                  <input
-                    type="number"
-                    className="input-field text-center"
-                    placeholder="Tgl"
-                    min={1} max={30}
-                    value={hijriParts.day}
-                    onChange={e => updateHijriPart('day', e.target.value)}
-                  />
-                  {/* Bulan */}
-                  <select
-                    className="input-field col-span-1"
-                    value={hijriParts.monthIdx}
-                    onChange={e => updateHijriPart('monthIdx', parseInt(e.target.value))}
-                  >
-                    {BULAN_HIJRIYAH.map((b, i) => (
-                      <option key={i} value={i}>{b}</option>
-                    ))}
-                  </select>
-                  {/* Tahun */}
-                  <input
-                    type="number"
-                    className="input-field text-center"
-                    placeholder="Tahun"
-                    min={1400} max={1600}
-                    value={hijriParts.year}
-                    onChange={e => updateHijriPart('year', e.target.value)}
-                  />
-                </div>
-                {form.tanggalHijriyah && (
-                  <p className="text-xs text-gray-400 mt-1">{form.tanggalHijriyah}</p>
-                )}
+            </div>
+
+            {/* Tanggal Hijriyah — full width agar dropdown tidak sempit */}
+            <div>
+              <label className="label">Tanggal (Hijriyah)</label>
+              <div className="flex items-center gap-2">
+                {/* Hari */}
+                <select
+                  className="input-field w-20 text-center"
+                  value={hijri.day}
+                  onChange={e => {
+                    const updated = { ...hijri, day: parseInt(e.target.value) }
+                    setHijri(updated)
+                    setHijriManual(true)
+                    setForm(p => ({ ...p, tanggalHijriyah: hijriObjToStr(updated) }))
+                  }}
+                >
+                  {Array.from({ length: 30 }, (_, i) => i + 1).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                {/* Bulan */}
+                <select
+                  className="input-field flex-1"
+                  value={hijri.month}
+                  onChange={e => {
+                    const updated = { ...hijri, month: parseInt(e.target.value) }
+                    setHijri(updated)
+                    setHijriManual(true)
+                    setForm(p => ({ ...p, tanggalHijriyah: hijriObjToStr(updated) }))
+                  }}
+                >
+                  {BULAN_HIJRIYAH.map((b, i) => (
+                    <option key={i} value={i + 1}>{b}</option>
+                  ))}
+                </select>
+                {/* Tahun */}
+                <input
+                  type="number"
+                  className="input-field w-24 text-center"
+                  value={hijri.year}
+                  min={1400}
+                  max={1600}
+                  onChange={e => {
+                    const updated = { ...hijri, year: parseInt(e.target.value) || hijri.year }
+                    setHijri(updated)
+                    setHijriManual(true)
+                    setForm(p => ({ ...p, tanggalHijriyah: hijriObjToStr(updated) }))
+                  }}
+                />
+                <span className="text-sm text-gray-500 flex-shrink-0">H</span>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0]
+                  const obj = form.tanggalMasehi === today
+                    ? todayHijriObj()
+                    : toHijriObj(form.tanggalMasehi)
+                  if (obj) {
+                    setHijri(obj)
+                    setHijriManual(false)
+                    setForm(p => ({ ...p, tanggalHijriyah: hijriObjToStr(obj) }))
+                  }
+                }}
+                className="text-xs text-primary-600 hover:text-primary-700 hover:underline mt-1.5"
+              >
+                ↻ Isi otomatis dari tanggal Masehi
+              </button>
             </div>
           </div>
 

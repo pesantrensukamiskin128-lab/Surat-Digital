@@ -79,7 +79,7 @@ const createSurat = async (req, res) => {
   try {
     const {
       jenisSurat = 'A', perihal, lampiran, isiSurat, lampiranIsi,
-      tujuanSurat, tanggalMasehi, tempatTerbit,
+      tujuanSurat, tanggalMasehi, tanggalHijriyah, tempatTerbit,
       tataUsahaId, kepalaId,
       penerimaEksternal, penerimaInternalIds,
       isDraft = true,
@@ -99,8 +99,8 @@ const createSurat = async (req, res) => {
         isiSurat,
         lampiranIsi:    lampiranIsi || null,
         tujuanSurat:    tujuanSurat || null,
-        tanggalMasehi:  tanggal,
-        tanggalHijriyah: hijriyah.formatted,
+        tanggalMasehi:    tanggal,
+        tanggalHijriyah:  hijriyahFormatted,
         tempatTerbit:   tempatTerbit || 'Bandung',
         status:         isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
         tataUsahaId:    tataUsahaId || null,
@@ -133,14 +133,15 @@ const updateSurat = async (req, res) => {
 
     const {
       jenisSurat, perihal, lampiran, isiSurat, lampiranIsi,
-      tujuanSurat, tanggalMasehi, tempatTerbit,
+      tujuanSurat, tanggalMasehi, tanggalHijriyah, tempatTerbit,
       tataUsahaId, kepalaId,
       penerimaEksternal, penerimaInternalIds,
       isDraft = true,
     } = req.body;
 
     const tanggal  = tanggalMasehi ? new Date(tanggalMasehi) : existing.tanggalMasehi;
-    const hijriyah = toHijriyah(tanggal);
+    // Pakai nilai hijriyah dari frontend jika dikirim, fallback ke kalkulasi
+    const hijriyahFormatted = tanggalHijriyah || toHijriyah(tanggal).formatted;
 
     await prisma.penerimaInternal.deleteMany({ where: { suratId: id } });
 
@@ -154,7 +155,7 @@ const updateSurat = async (req, res) => {
         lampiranIsi:     lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
         tujuanSurat:     tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
         tanggalMasehi:   tanggal,
-        tanggalHijriyah: hijriyah.formatted,
+        tanggalHijriyah: hijriyah.Formatted,
         tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
         status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
         tataUsahaId:     tataUsahaId     !== undefined ? tataUsahaId     : existing.tataUsahaId,
@@ -172,7 +173,16 @@ const updateSurat = async (req, res) => {
       include: suratInclude,
     });
 
-    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Tata Usaha', data: updated });
+    // Buat penerima internal secara terpisah (hindari nested create)
+    if (penerimaInternalIds?.length) {
+      for (const uid of penerimaInternalIds) {
+        await prisma.penerimaInternal.create({ data: { suratId: id, userId: uid } });
+      }
+    }
+
+    // Fetch ulang dengan penerima internal terbaru
+    const updatedWithPI = await prisma.suratKeluar.findUnique({ where: { id }, include: suratInclude });
+    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Sekretaris', data: updatedWithPI });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
