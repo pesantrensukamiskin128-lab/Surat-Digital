@@ -77,4 +77,31 @@ const uploadLogo = multer({ storage: logoStorage, fileFilter: imageFilter, limit
 const uploadFotoProfil = multer({ storage: fotoProfilStorage, fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 const uploadSuratMasuk = multer({ storage: suratMasukStorage, fileFilter: documentFilter, limits: { fileSize: 10 * 1024 * 1024 } });
 
-module.exports = { uploadLogo, uploadFotoProfil, uploadSuratMasuk };
+// Storage untuk dokumen pendukung surat keluar (PDF only, max 5 file, 20MB each)
+const dokumenPendukungStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(BASE_UPLOAD_DIR, 'dokumen-pendukung');
+    ensureDir(dir);
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/\.+/g, '.');
+    cb(null, `${Date.now()}-${safeName}`);
+  },
+});
+
+const pdfFilter = (req, file, cb) => {
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Hanya file PDF yang diizinkan untuk dokumen pendukung'), false);
+  }
+};
+
+const uploadDokumenPendukung = multer({
+  storage: dokumenPendukungStorage,
+  fileFilter: pdfFilter,
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+module.exports = { uploadLogo, uploadFotoProfil, uploadSuratMasuk, uploadDokumenPendukung };

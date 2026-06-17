@@ -159,8 +159,11 @@ model SuratKeluar {
   pembuatId       String      @db.VarChar(36)
   pembuat         User        @relation("SuratDibuat", fields: [pembuatId], references: [id])
 
-  penerimaEksternal String?   @db.Text
-  penerimaInternal  PenerimaInternal[]
+  penerimaEksternal  String?   @db.Text
+  penerimaInternal   PenerimaInternal[]
+
+  // Dokumen pendukung — array path file disimpan sebagai JSON string
+  dokumenPendukung   String?   @db.Text
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

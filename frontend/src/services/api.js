@@ -73,14 +73,24 @@ export const suratKeluarAPI = {
   getAll: (params) => api.get('/surat-keluar', { params }),
   getById: (id) => api.get(`/surat-keluar/${id}`),
   getStatistik: () => api.get('/surat-keluar/statistik'),
-  create: (data) => api.post('/surat-keluar', data),
-  update: (id, data) => api.put(`/surat-keluar/${id}`, data),
+  create: (formData) => api.post('/surat-keluar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  update: (id, formData) => api.put(`/surat-keluar/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
   delete: (id) => api.delete(`/surat-keluar/${id}`),
   kirim: (id) => api.post(`/surat-keluar/${id}/kirim`),
   tandaTangan: (id) => api.post(`/surat-keluar/${id}/tanda-tangan`),
   tolak: (id, data) => api.post(`/surat-keluar/${id}/tolak`, data),
   downloadPDF: (id) => api.get(`/surat-keluar/${id}/download`, { responseType: 'blob' }),
   previewPDF: (id) => api.get(`/surat-keluar/${id}/preview`, { responseType: 'blob' }),
+  deleteDokumen: (id, filename) => api.delete(`/surat-keluar/${id}/dokumen-pendukung/${filename}`),
+  getDokumenUrl: (id, filename) => {
+    const token = (() => { try { return JSON.parse(localStorage.getItem('sirama-auth') || '{}')?.state?.token } catch { return null } })()
+    const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/api$/, '')
+    return `${base}/api/surat-keluar/${id}/dokumen-pendukung/${filename}${token ? `?token=${token}` : ''}`
+  },
 }
 
 // Surat Masuk

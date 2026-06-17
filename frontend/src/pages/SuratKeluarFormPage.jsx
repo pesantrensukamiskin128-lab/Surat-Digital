@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeftIcon, DocumentCheckIcon, InformationCircleIcon, EyeIcon, DocumentDuplicateIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, DocumentCheckIcon, InformationCircleIcon, EyeIcon, DocumentDuplicateIcon, XMarkIcon, PaperClipIcon, TrashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { suratKeluarAPI, userAPI, templateAPI } from '../services/api'
 import RichTextEditor from '../components/editor/RichTextEditor'
@@ -91,6 +91,28 @@ export default function SuratKeluarFormPage() {
   const [previewModal, setPreviewModal] = useState(false)
   const [templateModal, setTemplateModal] = useState(false)
   const [templateSearch, setTemplateSearch] = useState('')
+  // Dokumen pendukung: file baru (File objects) + yang sudah ada (path strings)
+  const [dokumenBaru, setDokumenBaru] = useState([])
+  const [dokumenExisting, setDokumenExisting] = useState([])
+  const [dokumenExistingDihapus, setDokumenExistingDihapus] = useState([])
+
+  // Handler tambah file dokumen baru
+  const handleDokumenPick = (e) => {
+    const files = Array.from(e.target.files || [])
+    const total = dokumenExisting.length + dokumenBaru.length + files.length
+    if (total > 5) { toast.error('Maksimal 5 dokumen pendukung'); return }
+    setDokumenBaru(prev => [...prev, ...files])
+    e.target.value = ''
+  }
+
+  const hapusDokumenBaru = (idx) => setDokumenBaru(prev => prev.filter((_, i) => i !== idx))
+
+  const hapusDokumenExisting = (path) => {
+    setDokumenExisting(prev => prev.filter(p => p !== path))
+    setDokumenExistingDihapus(prev => [...prev, path])
+  }
+
+  const getFilename = (p) => p.split('/').pop()
 
   // State hijriyah terpisah: {day, month, year} — inisialisasi dari hari ini (dengan offset 18.00)
   const [hijri, setHijri] = useState(() => todayHijriObj())
@@ -144,13 +166,49 @@ export default function SuratKeluarFormPage() {
         setHijri(parsed)
         setHijriManual(true)
       }
+      // Load dokumen pendukung yang sudah ada
+      try {
+        const dp = existingSurat.dokumenPendukung
+          ? JSON.parse(existingSurat.dokumenPendukung)
+          : []
+        setDokumenExisting(dp)
+      } catch { setDokumenExisting([]) }
     }
   }, [existingSurat])
 
   // useEffect sync hijri→form dihapus — semua handler sudah set form.tanggalHijriyah langsung
 
   const saveMutation = useMutation({
-    mutationFn: (data) => isEdit ? suratKeluarAPI.update(id, data) : suratKeluarAPI.create(data),
+    mutationFn: (payload) => {
+      const { isDraft, dokumenDihapus } = payload
+      const fd = new FormData()
+
+      // Field teks
+      fd.append('jenisSurat', form.jenisSurat)
+      fd.append('perihal', form.perihal)
+      fd.append('lampiran', form.lampiran || '')
+      fd.append('isiSurat', form.isiSurat || '')
+      fd.append('lampiranIsi', form.lampiranIsi || '')
+      fd.append('tujuanSurat', form.tujuanSurat || '')
+      fd.append('tanggalMasehi', form.tanggalMasehi)
+      fd.append('tanggalHijriyah', form.tanggalHijriyah || '')
+      fd.append('tempatTerbit', form.tempatTerbit || 'Bandung')
+      fd.append('tataUsahaId', form.tataUsahaId || '')
+      fd.append('kepalaId', form.kepalaId || '')
+      fd.append('penerimaEksternal', form.penerimaEksternal || '')
+      fd.append('penerimaInternalIds', JSON.stringify(form.penerimaInternalIds))
+      fd.append('isDraft', isDraft ? 'true' : 'false')
+
+      // Dokumen yang dihapus (hanya saat edit)
+      if (dokumenDihapus?.length) {
+        fd.append('dokumenPendukungDihapus', JSON.stringify(dokumenDihapus))
+      }
+
+      // File dokumen baru
+      dokumenBaru.forEach(f => fd.append('dokumenPendukung', f))
+
+      return isEdit ? suratKeluarAPI.update(id, fd) : suratKeluarAPI.create(fd)
+    },
     onSuccess: (res) => {
       toast.success(res.data.message)
       queryClient.invalidateQueries(['surat-keluar'])
@@ -164,7 +222,7 @@ export default function SuratKeluarFormPage() {
     if (!form.isiSurat || form.isiSurat === '<p></p>') { toast.error('Isi surat harus diisi'); return }
     if (!form.tanggalMasehi)                         { toast.error('Tanggal harus diisi'); return }
     if (!isDraft && !form.tataUsahaId)              { toast.error('Pilih Tata Usaha terlebih dahulu'); return }
-    saveMutation.mutate({ ...form, isDraft })
+    saveMutation.mutate({ isDraft, dokumenDihapus: dokumenExistingDihapus })
   }
 
   const togglePenerima = (uid) => {
@@ -393,6 +451,54 @@ export default function SuratKeluarFormPage() {
             </p>
             <RichTextEditor value={form.lampiranIsi} onChange={set('lampiranIsi')}
               placeholder="Tulis isi lampiran di sini (opsional)..." minHeight="150px" />
+          </div>
+
+          {/* Dokumen Pendukung */}
+          <div className="card card-body space-y-3">
+            <h2 className="section-title">Dokumen Pendukung</h2>
+            <p className="text-xs text-gray-400">
+              Opsional — file PDF yang akan disertakan di halaman akhir surat (maks. 5 file, 20MB/file).
+            </p>
+
+            {/* Daftar dokumen existing */}
+            {dokumenExisting.map((dp) => (
+              <div key={dp} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
+                <PaperClipIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <a
+                  href={suratKeluarAPI.getDokumenUrl(id, getFilename(dp))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary-600 hover:underline truncate flex-1"
+                >
+                  {getFilename(dp)}
+                </a>
+                <button type="button" onClick={() => hapusDokumenExisting(dp)}
+                  className="p-1 text-red-400 hover:text-red-600 flex-shrink-0">
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            {/* Daftar file baru (belum diupload) */}
+            {dokumenBaru.map((f, i) => (
+              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 border border-blue-200">
+                <PaperClipIcon className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <span className="text-sm text-blue-700 truncate flex-1">{f.name}</span>
+                <button type="button" onClick={() => hapusDokumenBaru(i)}
+                  className="p-1 text-red-400 hover:text-red-600 flex-shrink-0">
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+
+            {/* Tombol tambah */}
+            {(dokumenExisting.length + dokumenBaru.length) < 5 && (
+              <label className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-400 hover:bg-primary-50 cursor-pointer transition-colors">
+                <PaperClipIcon className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-500">Tambah file PDF...</span>
+                <input type="file" accept="application/pdf" multiple onChange={handleDokumenPick} className="hidden" />
+              </label>
+            )}
           </div>
         </div>
 

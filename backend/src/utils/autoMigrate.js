@@ -1,10 +1,32 @@
 const path = require('path');
 
 /**
+ * Pastikan kolom-kolom baru yang belum ada di database sudah ter-create.
+ * Ini adalah fallback untuk development agar tidak perlu manual migrate.
+ */
+async function ensureColumns() {
+  try {
+    const prisma = require('../config/prisma');
+    // Tambah kolom dokumenPendukung jika belum ada (MySQL syntax)
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE `SuratKeluar` ADD COLUMN IF NOT EXISTS `dokumenPendukung` TEXT NULL'
+    );
+  } catch (e) {
+    // Kolom sudah ada atau DB belum siap — tidak fatal
+    if (!e.message.includes('Duplicate column')) {
+      console.warn('ensureColumns warning:', e.message);
+    }
+  }
+}
+
+/**
  * Jalankan prisma migrate deploy secara otomatis saat server start.
  * Menggunakan @prisma/migrate API langsung tanpa spawn child process.
  */
 async function autoMigrate() {
+  // Selalu pastikan kolom baru tersedia di semua environment
+  await ensureColumns();
+
   if (process.env.NODE_ENV !== 'production') {
     console.log('⏭️  Auto-migrate dilewati (bukan production)');
     return;

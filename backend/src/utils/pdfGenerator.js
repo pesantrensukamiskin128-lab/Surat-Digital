@@ -1560,6 +1560,51 @@ async function generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RES
   }
 }
 
+// ── EMBED DOKUMEN PENDUKUNG ───────────────────────────────────────────────────
+// Menyisipkan halaman-halaman dari file PDF pendukung ke dokumen output
+// menggunakan pdf-lib agar bisa digabung tanpa re-render
+async function appendDokumenPendukung(mainFilepath, dokumenPaths, organisasi) {
+  if (!dokumenPaths || !dokumenPaths.length) return mainFilepath;
+
+  const { PDFDocument: PDFLib } = require('pdf-lib');
+  const BASE_UPLOAD = process.env.UPLOAD_DIR
+    ? (process.env.UPLOAD_DIR.startsWith('/') ? process.env.UPLOAD_DIR : path.join(__dirname, '../../', process.env.UPLOAD_DIR))
+    : path.join(__dirname, '../../uploads');
+
+  try {
+    const mainBytes = fs2.readFileSync(mainFilepath);
+    const mergedDoc = await PDFLib.load(mainBytes);
+
+    for (const dp of dokumenPaths) {
+      try {
+        // Resolve absolute path dari path string /uploads/dokumen-pendukung/xxx.pdf
+        const absPath = dp.startsWith('/uploads/')
+          ? path.join(BASE_UPLOAD, dp.replace(/^\/uploads\//, ''))
+          : path.join(__dirname, '../../', dp);
+
+        if (!fs2.existsSync(absPath)) {
+          console.warn('⚠️ Dokumen pendukung tidak ditemukan:', absPath);
+          continue;
+        }
+
+        const docBytes = fs2.readFileSync(absPath);
+        const docToMerge = await PDFLib.load(docBytes);
+        const pages = await mergedDoc.copyPages(docToMerge, docToMerge.getPageIndices());
+        pages.forEach(p => mergedDoc.addPage(p));
+      } catch (e) {
+        console.warn('⚠️ Gagal embed dokumen pendukung:', dp, e.message);
+      }
+    }
+
+    const mergedBytes = await mergedDoc.save();
+    fs2.writeFileSync(mainFilepath, mergedBytes);
+  } catch (e) {
+    console.error('❌ Gagal merge dokumen pendukung:', e.message);
+  }
+
+  return mainFilepath;
+}
+
 // ── MAIN EXPORT ──────────────────────────────────────────────────────────[...]
 async function generateSuratPDF(surat, organisasi) {
   const uploadDir = path.join(__dirname, '../../uploads/pdf');
@@ -1569,8 +1614,8 @@ async function generateSuratPDF(surat, organisasi) {
   const filename  = `surat-${safeNomor}-${Date.now()}.pdf`;
   const filepath  = path.join(uploadDir, filename);
 
-  let qrDataUrl = null;       // untuk tanda tangan (tanpa logo)
-  let qrFooterUrl = null;    // untuk footer verifikasi (dengan logo)
+  let qrDataUrl = null;
+  let qrFooterUrl = null;
   if (surat.qrCodeToken) {
     try { qrDataUrl = await generateQRCodeDataURL(surat.qrCodeToken); } catch (_) {}
     try { qrFooterUrl = await generateQRCodeDataURLWithLogo(surat.qrCodeToken); } catch (_) {}
@@ -1581,6 +1626,12 @@ async function generateSuratPDF(surat, organisasi) {
     : '';
 
   const FOOTER_RESERVE = 90;
+
+  // Parse dokumen pendukung
+  let dokumenPaths = [];
+  if (surat.dokumenPendukung) {
+    try { dokumenPaths = JSON.parse(surat.dokumenPendukung); } catch { dokumenPaths = []; }
+  }
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -1593,18 +1644,21 @@ async function generateSuratPDF(surat, organisasi) {
       const jenis = surat.jenisSurat || 'A';
 
       if (jenis === 'SK') {
-        // Layout 3: Surat Keputusan
         await generateLayoutSK(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl);
       } else if (jenis === 'A' || jenis === 'B') {
-        // Layout 1: Surat Rutin
         await generateLayoutRutin(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl);
       } else {
-        // Layout 2: Surat Khusus (C,D,E,F,G,H,I,J,K)
         await generateLayoutKhusus(doc, surat, organisasi, qrDataUrl, FOOTER_RESERVE, qrFooterUrl);
       }
 
       doc.end();
-      stream.on('finish', () => resolve({ filepath }));
+      stream.on('finish', async () => {
+        // Gabungkan dokumen pendukung jika ada
+        if (dokumenPaths.length) {
+          await appendDokumenPendukung(filepath, dokumenPaths, organisasi);
+        }
+        resolve({ filepath });
+      });
       stream.on('error', reject);
     } catch (err) {
       reject(err);

@@ -8,6 +8,27 @@ const { createNotifikasi } = require('../utils/notifikasi');
 const path = require('path');
 const fs = require('fs');
 
+// Base upload dir — sama dengan upload middleware
+const BASE_UPLOAD_DIR = process.env.UPLOAD_DIR
+  ? (process.env.UPLOAD_DIR.startsWith('/') ? process.env.UPLOAD_DIR : path.join(__dirname, '../../', process.env.UPLOAD_DIR))
+  : path.join(__dirname, '../../uploads');
+
+// Helper: parse JSON array dari field dokumenPendukung
+function parseDokumen(str) {
+  if (!str) return [];
+  try { return JSON.parse(str); } catch { return []; }
+}
+
+// Helper: hapus file dokumen pendukung dari disk
+function hapusFileDokumen(filePaths = []) {
+  for (const fp of filePaths) {
+    try {
+      const abs = fp.startsWith('/') ? path.join(BASE_UPLOAD_DIR, fp.replace(/^\/uploads\//, '')) : path.join(__dirname, '../../', fp);
+      if (fs.existsSync(abs)) fs.unlinkSync(abs);
+    } catch (_) {}
+  }
+}
+
 const suratInclude = {
   pembuat:   { select: { id: true, namaLengkap: true, jabatan: true, role: true } },
   tataUsaha: { select: { id: true, namaLengkap: true, jabatan: true, nuptk: true } },
@@ -91,24 +112,34 @@ const createSurat = async (req, res) => {
     const tanggal = new Date(tanggalMasehi);
     const hijriyahFormatted = tanggalHijriyah || toHijriyah(tanggal).formatted;
 
+    // Dokumen pendukung yang baru diupload
+    const dokumenPaths = (req.files || []).map(f => `/uploads/dokumen-pendukung/${f.filename}`);
+
+    // Parse penerimaInternalIds — bisa string JSON atau array
+    let penerimaIds = penerimaInternalIds;
+    if (typeof penerimaInternalIds === 'string') {
+      try { penerimaIds = JSON.parse(penerimaInternalIds); } catch { penerimaIds = []; }
+    }
+
     const surat = await prisma.suratKeluar.create({
       data: {
         jenisSurat,
         perihal,
-        lampiran:       lampiran   || null,
+        lampiran:          lampiran    || null,
         isiSurat,
-        lampiranIsi:    lampiranIsi || null,
-        tujuanSurat:    tujuanSurat || null,
-        tanggalMasehi:    tanggal,
-        tanggalHijriyah:  hijriyahFormatted,
-        tempatTerbit:   tempatTerbit || 'Bandung',
-        status:         isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
-        tataUsahaId:    tataUsahaId || null,
-        kepalaId:       kepalaId    || null,
-        pembuatId:      req.user.id,
+        lampiranIsi:       lampiranIsi || null,
+        tujuanSurat:       tujuanSurat || null,
+        tanggalMasehi:     tanggal,
+        tanggalHijriyah:   hijriyahFormatted,
+        tempatTerbit:      tempatTerbit || 'Bandung',
+        status:            isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+        tataUsahaId:       tataUsahaId || null,
+        kepalaId:          kepalaId    || null,
+        pembuatId:         req.user.id,
         penerimaEksternal: penerimaEksternal || null,
-        penerimaInternal: penerimaInternalIds?.length
-          ? { create: penerimaInternalIds.map(uid => ({ userId: uid })) }
+        dokumenPendukung:  dokumenPaths.length ? JSON.stringify(dokumenPaths) : null,
+        penerimaInternal:  penerimaIds?.length
+          ? { create: penerimaIds.map(uid => ({ userId: uid })) }
           : undefined,
       },
       include: suratInclude,
@@ -137,47 +168,70 @@ const updateSurat = async (req, res) => {
       tataUsahaId, kepalaId,
       penerimaEksternal, penerimaInternalIds,
       isDraft = true,
+      // dokumenPendukungDihapus: array path yang perlu dihapus (dari frontend)
+      dokumenPendukungDihapus,
     } = req.body;
 
-    const tanggal  = tanggalMasehi ? new Date(tanggalMasehi) : existing.tanggalMasehi;
-    // Pakai nilai hijriyah dari frontend jika dikirim, fallback ke kalkulasi
+    const tanggal = tanggalMasehi ? new Date(tanggalMasehi) : existing.tanggalMasehi;
     const hijriyahFormatted = tanggalHijriyah || toHijriyah(tanggal).formatted;
+
+    // Dokumen pendukung yang sudah ada
+    let existingDokumen = parseDokumen(existing.dokumenPendukung);
+
+    // Hapus dokumen yang diminta dihapus
+    let toDelete = [];
+    if (dokumenPendukungDihapus) {
+      try { toDelete = typeof dokumenPendukungDihapus === 'string' ? JSON.parse(dokumenPendukungDihapus) : dokumenPendukungDihapus; } catch { toDelete = []; }
+    }
+    if (toDelete.length) {
+      hapusFileDokumen(toDelete);
+      existingDokumen = existingDokumen.filter(p => !toDelete.includes(p));
+    }
+
+    // Tambah dokumen baru dari upload
+    const newDokumen = (req.files || []).map(f => `/uploads/dokumen-pendukung/${f.filename}`);
+    const allDokumen = [...existingDokumen, ...newDokumen];
+
+    // Parse penerimaInternalIds
+    let penerimaIds = penerimaInternalIds;
+    if (typeof penerimaInternalIds === 'string') {
+      try { penerimaIds = JSON.parse(penerimaInternalIds); } catch { penerimaIds = []; }
+    }
 
     await prisma.penerimaInternal.deleteMany({ where: { suratId: id } });
 
     const updated = await prisma.suratKeluar.update({
       where: { id },
       data: {
-        jenisSurat:      jenisSurat      ?? existing.jenisSurat,
-        perihal:         perihal         ?? existing.perihal,
-        lampiran:        lampiran        !== undefined ? lampiran        : existing.lampiran,
-        isiSurat:        isiSurat        ?? existing.isiSurat,
-        lampiranIsi:     lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
-        tujuanSurat:     tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
-        tanggalMasehi:   tanggal,
-        tanggalHijriyah: hijriyahFormatted,
-        tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
-        status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
-        tataUsahaId:     tataUsahaId     !== undefined ? tataUsahaId     : existing.tataUsahaId,
-        kepalaId:        kepalaId        !== undefined ? kepalaId        : existing.kepalaId,
+        jenisSurat:        jenisSurat      ?? existing.jenisSurat,
+        perihal:           perihal         ?? existing.perihal,
+        lampiran:          lampiran        !== undefined ? lampiran        : existing.lampiran,
+        isiSurat:          isiSurat        ?? existing.isiSurat,
+        lampiranIsi:       lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
+        tujuanSurat:       tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
+        tanggalMasehi:     tanggal,
+        tanggalHijriyah:   hijriyahFormatted,
+        tempatTerbit:      tempatTerbit    ?? existing.tempatTerbit,
+        status:            isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+        tataUsahaId:       tataUsahaId     !== undefined ? tataUsahaId     : existing.tataUsahaId,
+        kepalaId:          kepalaId        !== undefined ? kepalaId        : existing.kepalaId,
         penerimaEksternal: penerimaEksternal !== undefined ? penerimaEksternal : existing.penerimaEksternal,
-        catatanTolak:    isDraft ? existing.catatanTolak : null,
-        parafTataUsaha:  false,
-        ttdKepala:       false,
+        dokumenPendukung:  allDokumen.length ? JSON.stringify(allDokumen) : null,
+        catatanTolak:      isDraft ? existing.catatanTolak : null,
+        parafTataUsaha:    false,
+        ttdKepala:         false,
         tglParafTataUsaha: null,
-        tglTtdKepala:    null,
+        tglTtdKepala:      null,
       },
       include: suratInclude,
     });
 
-    // Buat penerima internal secara terpisah (hindari nested create)
-    if (penerimaInternalIds?.length) {
-      for (const uid of penerimaInternalIds) {
+    if (penerimaIds?.length) {
+      for (const uid of penerimaIds) {
         await prisma.penerimaInternal.create({ data: { suratId: id, userId: uid } });
       }
     }
 
-    // Fetch ulang dengan penerima internal terbaru
     const updatedWithPI = await prisma.suratKeluar.findUnique({ where: { id }, include: suratInclude });
     res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Sekretaris', data: updatedWithPI });
   } catch (err) {
@@ -201,6 +255,9 @@ const deleteSurat = async (req, res) => {
       const qrFile = path.join(__dirname, '../../', existing.qrCodePath);
       if (fs.existsSync(qrFile)) fs.unlinkSync(qrFile);
     }
+
+    // Hapus semua dokumen pendukung
+    hapusFileDokumen(parseDokumen(existing.dokumenPendukung));
 
     await prisma.suratKeluar.delete({ where: { id } });
     res.json({ success: true, message: 'Surat berhasil dihapus' });
@@ -421,4 +478,53 @@ const getStatistik = async (req, res) => {
   }
 };
 
-module.exports = { getAllSurat, getSuratById, createSurat, updateSurat, deleteSurat, kirimSurat, tandaTangan, tolakSurat, downloadPDF, previewPDF, getStatistik };
+// ── HAPUS SATU DOKUMEN PENDUKUNG ──────────────────────────────────────────────
+const deleteDokumenPendukung = async (req, res) => {
+  try {
+    const { id, filename } = req.params;
+    const surat = await prisma.suratKeluar.findUnique({ where: { id } });
+    if (!surat) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
+
+    const filePath = `/uploads/dokumen-pendukung/${filename}`;
+    const dokumen = parseDokumen(surat.dokumenPendukung).filter(p => p !== filePath);
+
+    hapusFileDokumen([filePath]);
+
+    await prisma.suratKeluar.update({
+      where: { id },
+      data: { dokumenPendukung: dokumen.length ? JSON.stringify(dokumen) : null },
+    });
+
+    res.json({ success: true, message: 'Dokumen dihapus' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+  }
+};
+
+// ── SERVE DOKUMEN PENDUKUNG ───────────────────────────────────────────────────
+const serveDokumenPendukung = async (req, res) => {
+  try {
+    const { id, filename } = req.params;
+    const surat = await prisma.suratKeluar.findUnique({ where: { id } });
+    if (!surat) return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
+
+    const filePath = `/uploads/dokumen-pendukung/${filename}`;
+    const dokumen = parseDokumen(surat.dokumenPendukung);
+    if (!dokumen.includes(filePath))
+      return res.status(404).json({ success: false, message: 'File tidak ditemukan' });
+
+    const absPath = path.join(BASE_UPLOAD_DIR, 'dokumen-pendukung', filename);
+    if (!fs.existsSync(absPath))
+      return res.status(404).json({ success: false, message: 'File tidak ditemukan di server' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    fs.createReadStream(absPath).pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+  }
+};
+
+module.exports = { getAllSurat, getSuratById, createSurat, updateSurat, deleteSurat, kirimSurat, tandaTangan, tolakSurat, downloadPDF, previewPDF, getStatistik, deleteDokumenPendukung, serveDokumenPendukung };
