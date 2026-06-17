@@ -1077,6 +1077,17 @@ async function renderBodyBlocks(doc, blocks, startY, kopHeight, organisasi, foot
       y = renderTable(doc, block, ML, y);
       // Tidak tambah spacing ekstra setelah tabel — sudah cukup rapat
       continue;
+    } else if (block.type === 'image') {
+      // Render gambar base64 langsung ke PDF
+      try {
+        const src = block.src || '';
+        if (src.startsWith('data:image/')) {
+          const imgBuf = Buffer.from(src.split(',')[1], 'base64');
+          doc.image(imgBuf, ML, y, { fit: [CW, 300], align: 'left' });
+          y = doc.y + 6;
+        }
+      } catch (_) {}
+      continue;
     } else if (block.type === 'listitem') {
       // List item dengan indent
       const indent = block.indent || 20;
