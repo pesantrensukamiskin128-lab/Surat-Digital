@@ -101,6 +101,7 @@ export default function RichTextEditor({
   readOnly = false,
 }) {
   const imgInputRef = useRef(null)
+  const isInternalUpdate = useRef(false)
   const editor = useEditor({    extensions: [
       StarterKit.configure({ orderedList: false, bulletList: false }),
       CustomOrderedList,
@@ -119,7 +120,10 @@ export default function RichTextEditor({
     ],
     content: value || '',
     editable: !readOnly,
-    onUpdate: ({ editor }) => { onChange?.(editor.getHTML()) },
+    onUpdate: ({ editor }) => {
+      isInternalUpdate.current = true
+      onChange?.(editor.getHTML())
+    },
     editorProps: {
       attributes: {
         class: 'focus:outline-none',
@@ -129,11 +133,22 @@ export default function RichTextEditor({
     },
   })
 
+  // Sync value dari luar ke editor HANYA saat external update (bukan dari typing).
+  // Gunakan ref untuk melacak apakah perubahan berasal dari editor itu sendiri,
+  // sehingga gambar base64 tidak hilang akibat re-render loop.
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
+    if (!editor) return
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false
+      return
+    }
+    // Hanya set ulang konten jika value benar-benar berbeda dari sisi luar
+    // (misal: load data dari server / apply template)
+    const current = editor.getHTML()
+    if (value !== current) {
       editor.commands.setContent(value || '', false)
     }
-  }, [value])
+  }, [value, editor])
 
   if (!editor) return null
 
