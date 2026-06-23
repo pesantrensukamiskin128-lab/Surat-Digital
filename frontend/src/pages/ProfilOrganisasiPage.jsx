@@ -26,8 +26,8 @@ export default function ProfilOrganisasiPage() {
     if (profil) {
       setForm({
         tingkatanOrg: profil.tingkatanOrg || '',
+        namaArab:     profil.namaArab     || '',		
         namaOrg:      profil.namaOrg      || '',
-        namaArab:     profil.namaArab     || '',
         daerahOrg:    profil.daerahOrg    || '',
         alamat:       profil.alamat        || '',
         telepon:      profil.telepon       || '',

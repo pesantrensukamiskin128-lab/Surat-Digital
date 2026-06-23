@@ -87,6 +87,7 @@ model TemplateSurat {
 model OrganisasiProfil {
   id              String   @id @default(uuid()) @db.VarChar(36)
   tingkatanOrg    String   @default("Pimpinan Cabang")
+  namaArab        String   @default("")  
   namaOrg         String   @default("Fatayat Nahdlatul Ulama")
   daerahOrg       String   @default("Kota Bandung")
   alamat          String   @default("") @db.Text

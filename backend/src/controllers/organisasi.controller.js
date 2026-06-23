@@ -10,6 +10,7 @@ const getProfil = async (req, res) => {
       profil = await prisma.organisasiProfil.create({
         data: {
           tingkatanOrg: 'Pimpinan Cabang',
+          namaArab:     '',		  
           namaOrg:      'Fatayat Nahdlatul Ulama',
           daerahOrg:    'Kota Bandung',
           alamat: '', telepon: '', email: '', website: '',
@@ -25,11 +26,12 @@ const getProfil = async (req, res) => {
 
 const updateProfil = async (req, res) => {
   try {
-    const { tingkatanOrg, namaOrg, daerahOrg, alamat, telepon, email, website } = req.body;
+    const { tingkatanOrg, namaArab, namaOrg, daerahOrg, alamat, telepon, email, website } = req.body;
     let profil = await prisma.organisasiProfil.findFirst();
 
     const updateData = {
       tingkatanOrg: tingkatanOrg ?? profil?.tingkatanOrg ?? 'Pimpinan Cabang',
+      namaArab:     namaArab     !== undefined ? namaArab : (profil?.namaArab || ''),
       namaOrg:      namaOrg      ?? profil?.namaOrg      ?? 'Fatayat Nahdlatul Ulama',
       daerahOrg:    daerahOrg    ?? profil?.daerahOrg    ?? 'Kota Bandung',
       alamat:       alamat       !== undefined ? alamat   : (profil?.alamat   || ''),

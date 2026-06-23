@@ -12,6 +12,7 @@ async function main() {
     await prisma.organisasiProfil.create({
       data: {
         tingkatanOrg: 'Madrasah Ibtidaiyah',
+		namaArab      '',
         namaOrg:      'Madrasah',
         daerahOrg:    '',
         alamat:       '',
