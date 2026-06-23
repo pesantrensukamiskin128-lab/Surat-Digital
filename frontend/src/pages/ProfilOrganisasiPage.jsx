@@ -10,7 +10,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 export default function ProfilOrganisasiPage() {
   const queryClient = useQueryClient()
   const [form, setForm] = useState({
-    tingkatanOrg: '', namaOrg: '', daerahOrg: '',
+    tingkatanOrg: '', namaOrg: '', namaArab: '', daerahOrg: '',
     alamat: '', telepon: '', email: '', website: '',
   })
   const [logoFile, setLogoFile] = useState(null)
@@ -27,6 +27,7 @@ export default function ProfilOrganisasiPage() {
       setForm({
         tingkatanOrg: profil.tingkatanOrg || '',
         namaOrg:      profil.namaOrg      || '',
+        namaArab:     profil.namaArab     || '',
         daerahOrg:    profil.daerahOrg    || '',
         alamat:       profil.alamat        || '',
         telepon:      profil.telepon       || '',
@@ -126,16 +127,33 @@ export default function ProfilOrganisasiPage() {
           <div>
             <label className="label">Nama Yayasan<span className="text-red-500">*</span></label>
             <input type="text" className="input-field"
-              placeholder="contoh: Pimpinan Cabang"
+              placeholder="contoh: Yayasan Pondok Pesantren Sukamiskin"
               value={form.tingkatanOrg}
               onChange={e => setForm(p => ({ ...p, tingkatanOrg: e.target.value }))} />
             <p className="text-xs text-gray-400 mt-1">Singkatan: <strong>{form.tingkatanOrg.split(' ').map(w=>w[0]?.toUpperCase()||'').join('')}</strong></p>
           </div>
 
           <div>
+            <label className="label">
+              Nama Arab Organisasi
+              <span className="ml-2 text-xs font-normal text-gray-400">(opsional — tampil di kop surat dengan font Naskh)</span>
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="مثال: مدرسة الإسلامية"
+              dir="rtl"
+              style={{ fontFamily: "'Traditional Arabic', 'Arial', serif", fontSize: 18, textAlign: 'right' }}
+              value={form.namaArab}
+              onChange={e => setForm(p => ({ ...p, namaArab: e.target.value }))}
+            />
+            <p className="text-xs text-gray-400 mt-1">Tulis teks Arab — akan dirender otomatis di kop surat PDF</p>
+          </div>
+
+          <div>
             <label className="label">Nama Lembaga <span className="text-red-500">*</span></label>
             <input type="text" className="input-field"
-              placeholder="contoh: Fatayat Nahdlatul Ulama"
+              placeholder="contoh: MA YPP Sukamiskin"
               value={form.namaOrg}
               onChange={e => setForm(p => ({ ...p, namaOrg: e.target.value }))} />
             <p className="text-xs text-gray-400 mt-1">Singkatan: <strong>{form.namaOrg.split(' ').map(w=>w[0]?.toUpperCase()||'').join('')}</strong></p>
@@ -188,47 +206,64 @@ export default function ProfilOrganisasiPage() {
           </div>
         </div>
 
-        {/* Preview Kop Surat */}
+        {/* Preview Kop Surat — hanya tampil jika minimal ada satu field terisi */}
+        {(form.tingkatanOrg || form.namaOrg || form.namaArab || form.daerahOrg || currentLogo) && (
         <div className="card card-body">
           <h2 className="section-title mb-4">Preview Kop Surat</h2>
-          {/* Skala ~72% dari A4 (595pt → ~430px) agar proporsional */}
           <div className="border border-gray-200 rounded-xl p-4 bg-white overflow-x-auto">
             <div style={{ minWidth: 420 }}>
-              {/* Area kop — logo kiri, teks kanan (sama persis dengan PDF) */}
+              {/* Area kop — logo kiri, teks kanan */}
               <div className="flex items-center gap-0" style={{ paddingBottom: 6 }}>
                 {/* Logo */}
                 {currentLogo && (
-                  <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 65, height: 65, marginRight: 10 }}>
+                  <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 80, height: 80, marginRight: 10 }}>
                     <img
                       src={currentLogo}
                       alt="Logo"
-                      style={{ maxWidth: 65, maxHeight: 65, width: 'auto', height: 'auto', objectFit: 'contain' }}
+                      style={{ maxWidth: 80, maxHeight: 80, width: 'auto', height: 'auto', objectFit: 'contain' }}
                     />
                   </div>
                 )}
                 {/* Teks kop */}
                 <div className="flex-1 text-center" style={{ lineHeight: 1.25 }}>
-                  {/* Tingkatan — 10pt bold hijau */}
-                  <p style={{ fontSize: 10, fontWeight: 700, color: '#166534', textTransform: 'uppercase', margin: 0 }}>
-                    {form.tingkatanOrg || 'PIMPINAN CABANG'}
-                  </p>
-                  {/* Nama Org — 16pt bold hijau */}
-                  <p style={{ fontSize: 16, fontWeight: 700, color: '#166534', textTransform: 'uppercase', margin: '1px 0' }}>
-                    {form.namaOrg || 'FATAYAT NAHDLATUL ULAMA'}
-                  </p>
-                  {/* Daerah — 11pt bold hijau */}
+                  {/* Tingkatan — hanya jika diisi */}
+                  {form.tingkatanOrg && (
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#166534', textTransform: 'uppercase', margin: 0 }}>
+                      {form.tingkatanOrg}
+                    </p>
+                  )}
+                  {/* Nama Arab — hanya jika diisi */}
+                  {form.namaArab && (
+                    <p style={{
+                      fontSize: 18,
+                      color: '#166534',
+                      margin: '2px 0',
+                      fontFamily: "'Traditional Arabic', 'Arial', serif",
+                      direction: 'rtl',
+                      unicodeBidi: 'bidi-override',
+                    }}>
+                      {form.namaArab}
+                    </p>
+                  )}
+                  {/* Nama Org — hanya jika diisi */}
+                  {form.namaOrg && (
+                    <p style={{ fontSize: 16, fontWeight: 700, color: '#166534', textTransform: 'uppercase', margin: '1px 0' }}>
+                      {form.namaOrg}
+                    </p>
+                  )}
+                  {/* Daerah */}
                   {form.daerahOrg && (
                     <p style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase', margin: '1px 0' }}>
                       {form.daerahOrg}
                     </p>
                   )}
-                  {/* Alamat — 8.5pt regular abu */}
+                  {/* Alamat */}
                   {form.alamat && (
                     <p style={{ fontSize: 8.5, color: '#333333', margin: '1px 0' }}>
                       {form.alamat}
                     </p>
                   )}
-                  {/* Kontak — 7.5pt regular abu, dipisah | */}
+                  {/* Kontak */}
                   {[form.telepon, form.email, form.website].filter(Boolean).length > 0 && (
                     <p style={{ fontSize: 7.5, color: '#333333', margin: '1px 0' }}>
                       {[
@@ -240,7 +275,7 @@ export default function ProfilOrganisasiPage() {
                   )}
                 </div>
               </div>
-              {/* Garis tebal hijau — satu garis saja */}
+              {/* Garis tebal hijau */}
               <div style={{ height: 2.5, backgroundColor: '#166534', marginTop: 4 }} />
             </div>
             <p className="text-[10px] text-gray-400 text-center mt-3 italic">
@@ -248,6 +283,7 @@ export default function ProfilOrganisasiPage() {
             </p>
           </div>
         </div>
+        )}
 
         <div className="flex justify-end">
           <button type="submit" disabled={updateMutation.isPending} className="btn-primary px-8">

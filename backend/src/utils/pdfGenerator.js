@@ -5,10 +5,12 @@ const fs2         = require('fs');
 const { generateQRCodeDataURL, generateQRCodeDataURLWithLogo, getFrontendUrl } = require('./qrcode');
 
 // ── FONT PATHS ────────────────────────────────────────────────────────────[...]
-const FONTS_DIR  = path.join(__dirname, 'fonts');
-const FONT_ARAB_R = path.join(FONTS_DIR, 'TraditionalArabic.ttf');
-const FONT_ARAB_B = path.join(FONTS_DIR, 'TraditionalArabicBold.ttf');
-const HAS_ARAB    = fs2.existsSync(FONT_ARAB_R);
+const FONTS_DIR       = path.join(__dirname, 'fonts');
+const FONT_ARAB_R     = path.join(FONTS_DIR, 'TraditionalArabic.ttf');
+const FONT_ARAB_B     = path.join(FONTS_DIR, 'TraditionalArabicBold.ttf');
+const FONT_NASKH      = path.join(FONTS_DIR, 'DecoTypeNaskhSwashes.ttf');
+const HAS_ARAB        = fs2.existsSync(FONT_ARAB_R);
+const HAS_NASKH       = fs2.existsSync(FONT_NASKH);
 
 // ── FONT NAMES ───────────────────────────────────────────────────────────[...]
 const F_REG       = 'Times-Roman';
@@ -17,6 +19,10 @@ const F_ITAL      = 'Times-Italic';
 const F_BOLD_ITAL = 'Times-BoldItalic';
 const F_ARAB      = 'ArabFont';
 const F_ARAB_BOLD = 'ArabFontBold';
+const F_NASKH     = 'NaskhFont';
+// Font kop surat — Helvetica (built-in PDFKit, mirip Helvetica/Swiss)
+const F_KOP       = 'Helvetica-Bold';
+const F_KOP_REG   = 'Times-Roman';
 
 // ── PAGE CONSTANTS ─────────────────────────────────────────────────────────[...]
 const ML = 57;   // margin left
@@ -33,6 +39,7 @@ const LINE_GAP        = 2;   // line gap untuk paragraf biasa
 const LINE_GAP_TABLE  = 0;   // line gap dalam sel tabel — rapat seperti paragraf biasa
 const FS_KOP_TINGKAT  = 10;
 const FS_KOP_NAMA     = 16;
+const FS_KOP_ARAB     = 22;  // font Arab di kop surat
 const FS_KOP_DAERAH   = 11;
 const FS_KOP_ALAMAT   = 8.5;
 const FS_KOP_KONTAK   = 7.5;
@@ -846,6 +853,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
 
   const tingkatan = organisasi.tingkatanOrg || 'Pimpinan Cabang';
   const namaOrg   = organisasi.namaOrg      || 'Fatayat Nahdlatul Ulama';
+  const namaArab  = (organisasi.namaArab     || '').trim();
   const daerah    = organisasi.daerahOrg    || '';
   const alamat    = organisasi.alamat       || '';
   const telepon   = organisasi.telepon      || '';
@@ -895,6 +903,17 @@ async function drawKopSurat(doc, organisasi, pageY) {
      .text(tingkatan.toUpperCase(), textX, y, { width: textW, align: 'center' });
   y = doc.y + 1;
 
+  // Nama Arab yayasan
+  if (namaArab && HAS_ARAB) {
+    try {
+      doc.font(F_ARAB).fontSize(FS_KOP_ARAB).fillColor(GREEN)
+         .text(reshapeArabic(namaArab), textX, y, { width: textW, align: 'center' });
+      y = doc.y + 2;
+    } catch (err) {
+      console.warn('⚠️ Gagal render baris Arab di kop surat:', err.message);
+    }
+  }
+  
   // Nama organisasi
   doc.font(F_BOLD).fontSize(FS_KOP_NAMA).fillColor(GREEN)
      .text(namaOrg.toUpperCase(), textX, y, { width: textW, align: 'center' });
