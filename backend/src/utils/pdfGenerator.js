@@ -27,7 +27,7 @@ const F_KOP_REG   = 'Times-Roman';
 // ── PAGE CONSTANTS ─────────────────────────────────────────────────────────[...]
 const ML = 57;   // margin left
 const MR = 57;   // margin right
-const MT = 20;   // margin top
+const MT = 22;   // margin top
 const PW = 595.28;
 const PH = 841.89;
 const CW = PW - ML - MR;
@@ -860,7 +860,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
   const email     = organisasi.email        || '';
   const website   = organisasi.website      || '';
 
-  const logoMaxSize = 70;  // batas maksimal (lebar atau tinggi)
+  const logoMaxSize = 80;  // batas maksimal (lebar atau tinggi)
   const logoX       = ML;
   const textX       = hasLogo ? ML + logoMaxSize + 10 : ML;
   const textW       = hasLogo ? CW - logoMaxSize - 10  : CW;
@@ -887,7 +887,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
         drawW = logoMaxSize * ratio;
       }
 
-      // Estimasi tinggi total teks kop agar logo center vertikal
+      // Estimasi tinggi total teks kop agar bisa center logo secara vertikal
       const lineCount =
         (tingkatan ? 1 : 0) +
         (namaArab  ? 1 : 0) +
@@ -896,12 +896,8 @@ async function drawKopSurat(doc, organisasi, pageY) {
         (alamat    ? 1 : 0) +
         ((telepon || email || website) ? 1 : 0);
       const estimatedTextH = Math.max(
-        (tingkatan ? FS_KOP_TINGKAT * 1.4 : 0) +
-        (namaOrg   ? FS_KOP_NAMA    * 1.4 : 0) +
-        (daerah    ? FS_KOP_DAERAH  * 1.4 : 0) +
-        (alamat    ? FS_KOP_ALAMAT  * 1.4 : 0) +
-        ((telepon || email || website) ? FS_KOP_KONTAK * 1.4 : 0),
-        drawH
+        lineCount * 18,   // estimasi kasar tiap baris ~18pt
+        drawH             // minimal setinggi logo itu sendiri
       );
 
       const logoY = y + Math.max(0, (estimatedTextH - drawH) / 2) - 4;
