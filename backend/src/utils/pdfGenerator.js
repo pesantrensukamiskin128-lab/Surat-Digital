@@ -851,8 +851,8 @@ async function drawKopSurat(doc, organisasi, pageY) {
     console.warn('   Pastikan file ada di lokasi yang benar dan permissions tercukup');
   }
 
-  const tingkatan = organisasi.tingkatanOrg || 'Pimpinan Cabang';
-  const namaOrg   = organisasi.namaOrg      || 'Fatayat Nahdlatul Ulama';
+  const tingkatan = (organisasi.tingkatanOrg || '').trim();
+  const namaOrg   = (organisasi.namaOrg      || '').trim();
   const namaArab  = (organisasi.namaArab     || '').trim();
   const daerah    = organisasi.daerahOrg    || '';
   const alamat    = organisasi.alamat       || '';
