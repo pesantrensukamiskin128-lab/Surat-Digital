@@ -135,7 +135,7 @@ export default function ProfilOrganisasiPage() {
 
           <div>
             <label className="label">
-              Nama Arab Organisasi
+              Nama Arab Lembaga
               <span className="ml-2 text-xs font-normal text-gray-400">(opsional — tampil di kop surat dengan font Naskh)</span>
             </label>
             <input
