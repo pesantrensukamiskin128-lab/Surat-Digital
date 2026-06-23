@@ -40,7 +40,7 @@ const LINE_GAP_TABLE  = 0;   // line gap dalam sel tabel — rapat seperti parag
 const FS_KOP_TINGKAT  = 10;
 const FS_KOP_NAMA     = 16;
 const FS_KOP_ARAB     = 22;  // font Arab di kop surat
-const FS_KOP_DAERAH   = 11;
+const FS_KOP_DAERAH   = 12;
 const FS_KOP_ALAMAT   = 8.5;
 const FS_KOP_KONTAK   = 7.5;
 
@@ -860,15 +860,19 @@ async function drawKopSurat(doc, organisasi, pageY) {
   const email     = organisasi.email        || '';
   const website   = organisasi.website      || '';
 
-  const logoMaxSize = 65;  // batas maksimal (lebar atau tinggi)
+  const logoMaxSize = 70;  // batas maksimal (lebar atau tinggi)
   const logoX       = ML;
   const textX       = hasLogo ? ML + logoMaxSize + 10 : ML;
   const textW       = hasLogo ? CW - logoMaxSize - 10  : CW;
   let   y           = pageY !== undefined ? pageY : MT;
 
+  // Render teks kop dulu ke buffer posisi untuk menghitung total tinggi,
+  // lalu posisikan logo di tengah vertikal terhadap tinggi teks tersebut.
+  // Karena PDFKit tidak bisa "undo" render, kita estimasi tinggi teks kop
+  // lalu gambar logo di y + (kopTextH - drawH) / 2
+
   if (hasLogo) {
     try {
-      // Baca dimensi asli gambar agar rasio terjaga
       const imgInfo = doc.openImage(logoPath);
       const imgW    = imgInfo.width  || logoMaxSize;
       const imgH    = imgInfo.height || logoMaxSize;
@@ -876,21 +880,34 @@ async function drawKopSurat(doc, organisasi, pageY) {
 
       let drawW, drawH;
       if (ratio >= 1) {
-        // Landscape atau kotak — batasi lebar
         drawW = logoMaxSize;
         drawH = logoMaxSize / ratio;
       } else {
-        // Portrait — batasi tinggi
         drawH = logoMaxSize;
         drawW = logoMaxSize * ratio;
       }
 
-      // Posisikan vertikal di tengah area kop
-      const logoY = y + (logoMaxSize - drawH) / 2;
+      // Estimasi tinggi total teks kop agar logo center vertikal
+      const lineCount =
+        (tingkatan ? 1 : 0) +
+        (namaArab  ? 1 : 0) +
+        (namaOrg   ? 1 : 0) +
+        (daerah    ? 1 : 0) +
+        (alamat    ? 1 : 0) +
+        ((telepon || email || website) ? 1 : 0);
+      const estimatedTextH = Math.max(
+        (tingkatan ? FS_KOP_TINGKAT * 1.4 : 0) +
+        (namaOrg   ? FS_KOP_NAMA    * 1.4 : 0) +
+        (daerah    ? FS_KOP_DAERAH  * 1.4 : 0) +
+        (alamat    ? FS_KOP_ALAMAT  * 1.4 : 0) +
+        ((telepon || email || website) ? FS_KOP_KONTAK * 1.4 : 0),
+        drawH
+      );
+
+      const logoY = y + Math.max(0, (estimatedTextH - drawH) / 2) - 4;
       doc.image(logoPath, logoX, logoY, { width: drawW, height: drawH });
       console.log('✅ Logo berhasil ditampilkan:', logoPath);
     } catch (err) {
-      // Fallback: render dengan lebar saja, biarkan PDFKit hitung tinggi
       console.warn('⚠️ Error rendering logo:', err.message);
       try { doc.image(logoPath, logoX, y, { width: logoMaxSize }); } catch (e) {
         console.error('❌ Gagal menampilkan logo:', e.message);
