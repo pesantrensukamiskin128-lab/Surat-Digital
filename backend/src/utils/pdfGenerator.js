@@ -988,7 +988,7 @@ function drawIdentitasSurat(doc, surat, startY) {
     y = doc.y + 1;
   }
 
-  return y + 4;
+  return y + 6;
 }
 
 // ── TUJUAN SURAT ──────────────────────────────────────────────────────────[...]
@@ -1017,7 +1017,7 @@ function drawTujuan(doc, surat, startY) {
   y = doc.y + 1;
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text('        Tempat', ML, y, { width: CW });
-  y = doc.y + 2;
+  y = doc.y + 1;
   return y;
 }
 
