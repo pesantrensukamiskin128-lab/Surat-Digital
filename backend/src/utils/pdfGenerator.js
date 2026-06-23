@@ -864,7 +864,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
   const logoX       = ML;
   const textX       = hasLogo ? ML + logoMaxSize + 10 : ML;
   const textW       = hasLogo ? CW - logoMaxSize - 10  : CW;
-  let   y           = pageY !== undefined ? pageY : MT;
+  let   y           = pageY !== undefined ? pageY : MT + 8;
 
   // Render teks kop dulu ke buffer posisi untuk menghitung total tinggi,
   // lalu posisikan logo di tengah vertikal terhadap tinggi teks tersebut.
