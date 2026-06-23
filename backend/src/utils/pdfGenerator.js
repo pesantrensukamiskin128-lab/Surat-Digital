@@ -861,7 +861,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
   const website   = organisasi.website      || '';
 
   const logoMaxSize = 80;  // batas maksimal (lebar atau tinggi)
-  const logoX       = ML;
+  const logoX       = ML + 4;
   const textX       = hasLogo ? ML + logoMaxSize + 10 : ML;
   const textW       = hasLogo ? CW - logoMaxSize - 10  : CW;
   let   y           = pageY !== undefined ? pageY : MT + 8;
@@ -900,7 +900,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
         drawH             // minimal setinggi logo itu sendiri
       );
 
-      const logoY = y + Math.max(0, (estimatedTextH - drawH) / 2) - 2;
+      const logoY = y + Math.max(0, (estimatedTextH - drawH) / 2) + 2;
       doc.image(logoPath, logoX, logoY, { width: drawW, height: drawH });
       console.log('✅ Logo berhasil ditampilkan:', logoPath);
     } catch (err) {
