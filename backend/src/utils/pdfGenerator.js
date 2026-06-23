@@ -27,7 +27,7 @@ const F_KOP_REG   = 'Times-Roman';
 // ── PAGE CONSTANTS ─────────────────────────────────────────────────────────[...]
 const ML = 57;   // margin left
 const MR = 57;   // margin right
-const MT = 22;   // margin top
+const MT = 20;   // margin top
 const PW = 595.28;
 const PH = 841.89;
 const CW = PW - ML - MR;
@@ -900,7 +900,7 @@ async function drawKopSurat(doc, organisasi, pageY) {
         drawH             // minimal setinggi logo itu sendiri
       );
 
-      const logoY = y + Math.max(0, (estimatedTextH - drawH) / 2) - 4;
+      const logoY = y + Math.max(0, (estimatedTextH - drawH) / 2) - 2;
       doc.image(logoPath, logoX, logoY, { width: drawW, height: drawH });
       console.log('✅ Logo berhasil ditampilkan:', logoPath);
     } catch (err) {
